@@ -2,7 +2,7 @@
 from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
 import datetime
-
+from flask_cors import CORS
 # Initialize Flask app
 app = Flask(__name__)
 
@@ -12,7 +12,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Initialize the database
 db = SQLAlchemy(app)
-
+CORS(app)
 # Models
 # These represent the tables identical in database
 
