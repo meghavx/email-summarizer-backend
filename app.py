@@ -1,5 +1,5 @@
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from sqlalchemy.orm import joinedload
@@ -146,6 +146,78 @@ def summarize_thread_by_id(thread_id):
     db.session.commit()    
     """
     return jsonify({'summary':"Here is the summary of the data...summary summary summary"})
+
+"""
+curl --request POST \
+  --url http://localhost:5000/create/email \
+  --header 'Content-Type: application/json' \
+  --header 'User-Agent: insomnia/10.0.0' \
+  --data '{
+	"sender_email": "tushar@abc.com",
+	"email_subject": "Enquiry about refund",
+	"email_content" : "I wanted to know what happend to my refund. Thanks"
+}'
+"""
+@app.route('/create/email', methods=['POST'])
+def create_email():
+    data = request.json  # Parse the incoming JSON data
+
+    # Validate the necessary fields
+    if not all(k in data for k in ("sender_email", "email_subject", "email_content")):
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    # Create new EmailThread and Email instances
+    new_thread = EmailThread(thread_topic=data['email_subject'])
+    db.session.add(new_thread)
+    db.session.flush()  # This will generate an ID for the new thread before committing
+
+    new_email = Email(
+        sender_email=data['sender_email'],
+        email_thread_id=new_thread.email_thread_id,
+        email_subject=data['email_subject'],
+        email_content=data['email_content'],
+        email_received_timestamp=db.func.now()  # Set timestamp to now
+    )
+    db.session.add(new_email)
+    db.session.commit()
+
+    return jsonify({'success': 'Email and thread created successfully', 'thread_id': new_thread.email_thread_id, 'email_record_id': new_email.email_record_id}), 201
+
+""""
+curl --request POST \
+  --url http://localhost:5000/create/email/2 \
+  --header 'Content-Type: application/json' \
+  --data '{
+	"sender_email" : "nehal@abc.com", 
+	"email_subject": "refund",
+	"email_content": "asdasdasdas "
+}'
+"""
+@app.route('/create/email/<int:thread_id>', methods=['POST'])
+def add_email_to_thread(thread_id):
+    data = request.json  # Parse the incoming JSON data
+    
+    # Validate the necessary fields
+    if not all(k in data for k in ("sender_email", "email_subject", "email_content")):
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    # Check if the thread exists
+    thread = EmailThread.query.get(thread_id)
+    if not thread:
+        return jsonify({'error': 'Thread not found'}), 404
+
+    # Create a new Email instance
+    new_email = Email(
+        sender_email=data['sender_email'],
+        email_thread_id=thread_id,
+        email_subject=data['email_subject'],
+        email_content=data['email_content'],
+        email_received_timestamp=db.func.now()  # Set timestamp to now
+    )
+    db.session.add(new_email)
+    db.session.commit()
+
+    return jsonify({'success': 'Email added to thread', 'email_record_id': new_email.email_record_id}), 201
 
 # Run the application
 if __name__ == '__main__':
