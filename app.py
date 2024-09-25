@@ -1,8 +1,10 @@
 
 from flask import Flask, jsonify
 from flask_sqlalchemy import SQLAlchemy
-import datetime
 from flask_cors import CORS
+from sqlalchemy.orm import joinedload
+from sqlalchemy import desc
+
 # Initialize Flask app
 app = Flask(__name__)
 
@@ -71,14 +73,14 @@ def get_all_threads():
     threads = EmailThread.query.all()
     thread_list = []
     for thread in threads:
-        seqNo = 0
         emails = [{
+            'seq_no': i,
             'sender': email.sender_email.split('@')[0],  # Extracting name from email
             'senderEmail': email.sender_email,
             'date': email.email_received_timestamp.strftime('%B %d, %Y %I:%M %p') if email.email_received_timestamp else None,
             'content': email.email_content,
             'isOpen': False  # Assuming 'isOpen' is false for simplicity
-        } for email in thread.emails]
+        } for i,email in  enumerate(thread.emails)]
         
         thread_list.append({
             'threadId' : thread.email_thread_id,
@@ -116,7 +118,9 @@ def sortEmails(emailList):
 
 @app.post('/summarize/<int:thread_id>')
 def summarize_thread_by_id(thread_id):
-    thread = EmailThread.query.get(thread_id)
+    thread = EmailThread.query.options(
+    joinedload(EmailThread.emails).order_by(desc(Email.email_received_timestamp))
+).all()
     if not thread:
         return jsonify({'error': 'Thread not found'}), 404
     
