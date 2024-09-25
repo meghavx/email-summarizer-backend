@@ -1,131 +1,516 @@
-CREATE TABLE emails (
-			email_record_id serial PRIMARY KEY,
-			sender_email CHAR(250) NOT NULL,
-			email_thread_id INT NOT NULL,
-			email_received_timestamp TIMESTAMP default now(),
-			email_subject CHAR(250) NOT NULL,
-			email_content TEXT
-		);
+begin;
 
-		CREATE TABLE email_threads (
-			email_thread_id serial primary key,
-			thread_topic CHAR(250)
-		);		
+CREATE TABLE emails (
+  email_record_id SERIAL PRIMARY KEY,
+  sender_email VARCHAR(50) NOT NULL,
+  sender_name VARCHAR(100),
+  receiver_email VARCHAR(50) NOT NULL,
+  receiver_name VARCHAR(100),
+  thread_id INT NOT NULL,
+  email_received_at TIMESTAMP,
+  email_subject VARCHAR(50) NOT NULL,
+  email_content TEXT NOT NULL
+);
+
+CREATE TABLE threads (
+  thread_id serial PRIMARY KEY,
+  thread_topic VARCHAR(50)
+);
+
+CREATE TABLE summaries (
+  summary_id SERIAL PRIMARY KEY,
+  thread_id INTEGER NOT NULL REFERENCES threads (thread_id),
+  summary_content TEXT NOT NULL,
+  summary_created_at TIMESTAMP DEFAULT NOW(),
+  summary_modified_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TYPE SENTIMENT AS ENUM (
+  'Critical', 
+  'Needs attention',
+  'Neutral', 
+  'Positive'
+);
+
+CREATE TABLE email_thread_sentiment (
+  thread_id INTEGER NOT NULL REFERENCES threads (thread_id), 
+  sentiments sentiment NOT NULL,
+  timestamp TIMESTAMP DEFAULT NOW()
+);
 
 INSERT INTO emails (
-			sender_email,
-			email_thread_id,
-			email_received_timestamp,
-			email_subject, email_content
-		)
-		VALUES
-			( 'alice@example.com', 12345, '2024-09-23 08:00:00', 'Project Discussion', 'Hi Bob, 
+  sender_email, 
+  receiver_email, 
+  thread_id, 
+  email_received_at, 
+  email_subject, 
+  email_content, 
+  sender_name,
+  receiver_name
+)
+VALUES 
+  ('ethan.turner@example.com', 'support@business.com', 12345, '2024-09-23 08:00:00', 'Product Inquiry', 
+  'Dear Support Team,\n\nI hope this message finds you well. I am interested in learning more about the features your product offers. Could you kindly provide more information?\n\nThank you for your time and assistance.\n\nBest regards,\nEthan Turner', 
+  'Ethan Turner', 'Support Team'),
 
-I hope this email finds you well. I wanted to follow up on our previous discussion about the project details. I have attached a revised proposal that includes some additional information. Please 
-review and let me know if there are any changes you would like to see.
+  ('support@business.com', 'ethan.turner@example.com', 12345, '2024-09-23 09:00:00', 'Product Inquiry', 
+  'Hello Ethan,\n\nThank you for reaching out to us. We appreciate your interest in our products. Our product line includes a variety of features designed to meet your needs. Please let us know if you have any specific requirements.\n\nLooking forward to your response.\n\nBest regards,\nSupport Team', 
+  'Support Team', 'Ethan Turner'),
 
-Best,
-Alice'),
-			( 'bob@example.com', 12345, '2024-09-23 09:30:00', 'Project Discussion', 'Hi Alice,
+  ('ethan.turner@example.com', 'support@business.com', 12345, '2024-09-23 10:00:00', 'Product Inquiry', 
+  'Hi Support Team,\n\nThank you for the quick response. Could you also provide a detailed comparison of your product with similar products on the market?\n\nI look forward to your insights.\n\nBest regards,\nEthan Turner', 
+  'Ethan Turner', 'Support Team'),
 
-Thank you for the revised proposal. I have reviewed it and would like to request a few changes. Please see below:
+  ('support@business.com', 'ethan.turner@example.com', 12345, '2024-09-23 11:00:00', 'Product Inquiry', 
+  'Hi Ethan,\n\nCertainly! Here is a detailed comparison of our product with our competitors. We believe our product stands out due to its user-friendly interface and comprehensive support.\n\nPlease review the attached details.\n\nBest regards,\nSupport Team', 
+  'Support Team', 'Ethan Turner'),
 
-* Can we include a more detailed project timeline?
-* Would it be possible to provide a breakdown of the estimated costs?
+  ('ethan.turner@example.com', 'support@business.com', 12345, '2024-09-23 12:00:00', 'Product Inquiry', 
+  'Hello again,\n\nOne more question—do you offer any discounts for bulk purchases? We are considering a large order if the pricing works for us.\n\nThank you in advance.\n\nBest,\nEthan Turner', 
+  'Ethan Turner', 'Support Team'),
 
-Looking forward to hearing back from you.
+  ('support@business.com', 'ethan.turner@example.com', 12345, '2024-09-23 13:00:00', 'Product Inquiry', 
+  'Hi Ethan,\n\nYes, we do offer discounts for bulk purchases. Please provide your requirements, and we will be happy to assist with a tailored offer.\n\nKind regards,\nSupport Team', 
+  'Support Team', 'Ethan Turner'),
 
-Best,
-Bob'),
-			( 'alice@example.com', 12345, '2024-09-23 10:00:00', 'Project Discussion', '
-        Hi Bob,
+  ('ethan.turner@example.com', 'support@business.com', 12345, '2024-09-23 14:00:00', 'Product Inquiry', 
+  'Hi Support Team,\n\nCan you also confirm the warranty period for your products?\n\nBest regards,\nEthan Turner', 
+  'Ethan Turner', 'Support Team'),
 
-Thank you for your feedback. I have updated the proposal to include a detailed project timeline and estimated costs. You can find the revised document attached.
+  ('support@business.com', 'ethan.turner@example.com', 12345, '2024-09-23 15:00:00', 'Product Inquiry', 
+  'Hello Ethan,\n\nOur products come with a one-year warranty. Please feel free to reach out if you need more information.\n\nBest regards,\nSupport Team', 
+  'Support Team', 'Ethan Turner'),
 
-Please let me know if this meets your requirements. If not, please dont hesitate to reach out with any further changes.
+  ('ethan.turner@example.com', 'support@business.com', 12345, '2024-09-23 16:00:00', 'Product Inquiry', 
+  'Hi Support Team,\n\nLastly, I wanted to ask if you offer any trial period for the product before making a purchase.\n\nThank you for your help.\n\nBest,\nEthan Turner', 
+  'Ethan Turner', 'Support Team'),
 
-Best,
-Alice'),
-			( 'bob@example.com', 12345, '2024-09-23 10:30:00', 'Project Discussion', 'Hi Alice,
+  ('support@business.com', 'ethan.turner@example.com', 12345, '2024-09-23 17:00:00', 'Product Inquiry', 
+  'Hi Ethan,\n\nUnfortunately, we do not offer a trial period. However, we do have a return policy if the product does not meet your expectations. Please let us know if you have any further questions.\n\nThank you for considering our product.\n\nBest regards,\nSupport Team', 
+  'Support Team', 'Ethan Turner'),
 
-I have reviewed the revised proposal and it looks great. I would like to schedule a meeting to discuss the project further. Would you be available tomorrow at 2 PM?
+  ('mary.jones@example.com', 'support@business.com', 12347, '2024-09-25 08:00:00', 'Billing Inquiry', 'Can you clarify my last bill? There seems to be a Charge I don''t understand.', 'Mary Jones', 'Alice Smith'),
+  ('support@business.com', 'mary.jones@example.com', 12347, '2024-09-25 09:00:00', 'Billing Inquiry', 'We’d be happy to clarify that Charge. It''s for additional services you opted for.', 'Alice Smith', 'Mary Jones'),
+  ('alex.brown@example.com', 'support@business.com', 12347, '2024-09-25 10:00:00', 'Billing Inquiry', 'Is there a way to get a detailed bill breakdown?', 'Alex Brown', 'Alice Smith'),
+  ('support@business.com', 'alex.brown@example.com', 12347, '2024-09-25 11:00:00', 'Billing Inquiry', 'Yes, we can send you a detailed breakdown upon request.', 'Alice Smith', 'Alex Brown'),
+  ('susan.williams@example.com', 'support@business.com', 12347, '2024-09-25 12:00:00', 'Billing Inquiry', 'I’d like to see the breakdown, please.', 'Susan Williams', 'Alice Smith'),
+  ('support@business.com', 'susan.williams@example.com', 12347, '2024-09-25 13:00:00', 'Billing Inquiry', 'Sure! I will send that to your email shortly.', 'Alice Smith', 'Susan Williams'),
+  
+  ('emily.davis@example.com', 'support@business.com', 12348, '2024-09-26 08:00:00', 'Feedback Request', 'I’d like to share some feedback on my recent experience.', 'Emily Davis', 'Support Team'),
+  ('support@business.com', 'emily.davis@example.com', 12348, '2024-09-26 09:00:00', 'Feedback Request', 'Thank you for your feedback! We value our customers'' input.', 'Support Team', 'Emily Davis'),
+  ('emily.davis@example.com', 'support@business.com', 12348, '2024-09-26 10:00:00', 'Feedback Request', 'I found your service very helpful, thank you!', 'Emily Davis', 'Support Team'),
+  ('support@business.com', 'emily.davis@example.com', 12348, '2024-09-26 11:00:00', 'Feedback Request', 'We’re glad to hear that! Please let us know if you need anything else.', 'Support Team', 'Emily Davis'),
+  ('emily.davis@example.com', 'support@business.com', 12348, '2024-09-26 12:00:00', 'Feedback Request', 'I have some suggestions for improvement.', 'Emily Davis', 'Support Team'),
+  ('support@business.com', 'emily.davis@example.com', 12348, '2024-09-26 13:00:00', 'Feedback Request', 'We appreciate your suggestions and will take them into account.', 'Support Team', 'Emily Davis'),
+  
+  ('john.doe@example.com', 'support@business.com', 12349, '2024-09-27 08:00:00', 'Product Inquiry', 'What are your shipping options?', 'John Doe', 'Alice Smith'),
+  ('support@business.com', 'john.doe@example.com', 12349, '2024-09-27 09:00:00', 'Product Inquiry', 'We offer standard and express shipping options.', 'Alice Smith', 'John Doe'),
+  ('mary.jones@example.com', 'support@business.com', 12349, '2024-09-27 10:00:00', 'Product Inquiry', 'How can I track my shipment?', 'Mary Jones', 'Alice Smith'),
+  ('support@business.com', 'mary.jones@example.com', 12349, '2024-09-27 11:00:00', 'Product Inquiry', 'Once your order ships, you will receive a tracking number via email.', 'Alice Smith', 'Mary Jones'),
+  ('alex.brown@example.com', 'support@business.com', 12349, '2024-09-27 12:00:00', 'Product Inquiry', 'Are there any additional shipping fees?', 'Alex Brown', 'Alice Smith'),
+  ('support@business.com', 'alex.brown@example.com', 12349, '2024-09-27 13:00:00', 'Product Inquiry', 'Additional fees may apply for express shipping.', 'Alice Smith', 'Alex Brown'),
+  ('susan.williams@example.com', 'support@business.com', 12349, '2024-09-27 14:00:00', 'Product Inquiry', 'Can I change my shipping address after placing an order?', 'Susan Williams', 'Alice Smith'),
+  ('support@business.com', 'susan.williams@example.com', 12349, '2024-09-27 15:00:00', 'Product Inquiry', 'Yes, please contact us as soon as possible to make changes.', 'Alice Smith', 'Susan Williams'),
+  
+  ('Charles.white@example.com', 'support@business.com', 12350, '2024-09-28 08:00:00', 'Technical Support', 'I am having issues with my product.', 'Charles White', 'Alice Smith'),
+  ('support@business.com', 'Charles.white@example.com', 12350, '2024-09-28 09:00:00', 'Technical Support', 'I''m sorry to hear that! Can you describe the issue?', 'Alice Smith', 'Charles White'),
+  ('olivia.johnson@example.com', 'support@business.com', 12350, '2024-09-28 10:00:00', 'Technical Support', 'My product is not turning on.', 'Olivia Johnson', 'Alice Smith'),
+  ('support@business.com', 'olivia.johnson@example.com', 12350, '2024-09-28 11:00:00', 'Technical Support', 'Please check if the device is Charged and try again.', 'Alice Smith', 'Olivia Johnson'),
+  ('emily.davis@example.com', 'support@business.com', 12350, '2024-09-28 12:00:00', 'Technical Support', 'I have tried Charging it, but it still doesn''t work.', 'Emily Davis', 'Alice Smith'),
+  ('support@business.com', 'emily.davis@example.com', 12350, '2024-09-28 13:00:00', 'Technical Support', 'In that case, we may need to arrange for a replacement. Would that be okay?', 'Alice Smith', 'Emily Davis');
 
-Looking forward to hearing back from you.
+INSERT INTO emails (
+  sender_email, 
+  receiver_email, 
+  thread_id, 
+  email_received_at, 
+  email_subject, 
+  email_content, 
+  sender_name,
+  receiver_name
+)
+VALUES 
+  ('olivia.johnson@example.com', 'support@business.com', 12346, '2024-09-24 08:00:00', 'Order Status', 
+   'Dear Support Team,\n\nI hope this message finds you well. I recently placed an order with your company, and I''m writing to check on the current status of my order #1234. It''s been a few days since I received the confirmation email, and I wanted to ensure that everything is proceeding as expected.\n\nI would appreciate it if you could provide me with an update on the order processing and an estimated delivery date if available. I am looking forward to receiving the products and appreciate your time in assisting with this.\n\nThank you for your help, and I look forward to your response.\n\nBest regards,\nOlivia Johnson', 
+   'Olivia Johnson', 'Support Team'),
 
-Best,
-Bob'),
-			( 'carol@example.com', 12345, '2024-09-23 11:00:00', 'Project Discussion', 'Hi Bob,
+  ('support@business.com', 'olivia.johnson@example.com', 12346, '2024-09-24 09:00:00', 'Order Status', 
+   'Dear Olivia,\n\nThank you for reaching out and for your order with us. I completely understand your eagerness to know the current status of your order. I''m happy to inform you that your order is currently being processed and is in the final stages before shipment. Once your order is dispatched, you will receive an email with the tracking information, so you can follow the delivery progress.\n\nAt this time, we estimate that your order will be shipped within the next 24 hours. From there, delivery typically takes 3-5 business days, depending on your location.\n\nIf you have any further questions or need additional assistance, please don''t hesitate to reach out. We appreciate your patience and your business with us.\n\nKind regards,\nSupport Team', 
+   'Support Team', 'Olivia Johnson'),
 
-I would be happy to meet with you tomorrow at 2 PM. I will make sure to bring any necessary documents and materials.
+  ('olivia.johnson@example.com', 'support@business.com', 12346, '2024-09-24 10:00:00', 'Order Status', 
+   'Hi Support Team,\n\nThank you for your prompt response and for keeping me informed. I really appreciate it. I was hoping to also ask if you could provide an estimated delivery window for my order #1234. While I understand that shipping times can vary, it would be helpful to know when I can expect to receive the items, as I need to plan accordingly.\n\nAlso, I''d like to confirm that the shipping address on the order is correct, just in case. I''m not sure if that information was included in the confirmation email I received. Could you verify the shipping details for me?\n\nThanks again for your assistance. I look forward to hearing back from you soon.\n\nBest regards,\nOlivia Johnson', 
+   'Olivia Johnson', 'Support Team'),
 
-Looking forward to our discussion!
+  ('support@business.com', 'olivia.johnson@example.com', 12346, '2024-09-24 11:00:00', 'Order Status', 
+   'Dear Olivia,\n\nThank you for your email and for the additional questions. I can confirm that your shipping address is accurate, and the items will be delivered to the address listed in your confirmation email. Regarding the delivery time, we estimate that your package will arrive within 3-5 business days, depending on your location. Once the order is shipped, you will receive tracking information, which will give you more specific details on when your package will arrive.\n\nWe understand that it''s important to have this information for planning, and we will do our best to ensure that your order reaches you promptly. Please don''t hesitate to reach out if you have any further questions or concerns. We''re always here to help.\n\nSincerely,\nSupport Team', 
+   'Support Team', 'Olivia Johnson'),
 
-Best,
-Alice'),
-			('alice@example.com', 12345, '2024-09-23 11:15:00', 'Project Discussion', 'Absolutely, the more, the merrier!'),
-			('dave@example.com', 12345, '2024-09-23 11:30:00', 'Project Discussion', 'Count me in for the meeting too!'),
-			('bob@example.com', 12345, '2024-09-23 12:00:00', 'Project Discussion', 'Perfect! I’ll send a calendar invite.'),
-			('carol@example.com', 12346, '2024-09-23 13:00:00', 'Feedback on the Proposal', 'Hi Alice, I reviewed the proposal. I have some suggestions.'),
-			('alice@example.com', 12346, '2024-09-23 14:00:00', 'Feedback on the Proposal', 'Thanks, Carol! I’d love to hear your thoughts.'),
-			('carol@example.com', 12346, '2024-09-23 14:30:00', 'Feedback on the Proposal', 'Let’s discuss it during our next meeting.'),
-			('dave@example.com', 12346, '2024-09-23 15:00:00', 'Feedback on the Proposal', 'I also have some feedback to share.'),
-			('alice@example.com', 12346, '2024-09-23 15:15:00', 'Feedback on the Proposal', 'Sounds great! Let’s make it a point to discuss.'),
-			('bob@example.com', 12346, '2024-09-23 15:30:00', 'Feedback on the Proposal', 'I can’t wait to hear everyone’s input!'),
-			('alice@example.com', 12347, '2024-09-23 16:00:00', 'Follow-Up', 'Hi team, just following up on our discussion from last week.'),
-			('carol@example.com', 12347, '2024-09-23 16:15:00', 'Follow-Up', 'Thanks for the reminder, Alice! I’ll finalize my notes.'),
-			('bob@example.com', 12347, '2024-09-23 16:30:00', 'Follow-Up', 'I’ll add my input by tomorrow.'),
-			('dave@example.com', 12347, '2024-09-23 17:00:00', 'Follow-Up', 'Looking forward to it!'),
-			('alice@example.com', 12348, '2024-09-23 18:00:00', 'Meeting Reminder', 'Hi everyone, just a quick reminder about our meeting tomorrow.'),
-			('bob@example.com', 12348, '2024-09-23 18:30:00', 'Meeting Reminder', 'Thanks for the reminder, Alice!'),
-			('carol@example.com', 12348, '2024-09-23 19:00:00', 'Meeting Reminder', 'I’ll be there!'),
-			('dave@example.com', 12348, '2024-09-23 19:30:00', 'Meeting Reminder', '          : See you all tomorrow!'),
-			('alice@example.com', 12349, '2024-09-24 08:00:00', 'Project Update', 'Morning team, here’s the latest update on the project.'),
-			('bob@example.com', 12349, '2024-09-24 08:30:00', 'Project Update', 'Thanks for the update, Alice! Looks good.'),
-			('carol@example.com', 12349, '2024-09-24 09:00:00', 'Project Update', 'I agree! Let’s keep up the momentum.'),
-			('dave@example.com', 12349, '2024-09-24 09:30:00', 'Project Update', 'Great job, team!'),
-			('alice@example.com', 12350, '2024-09-24 10:00:00', 'Feedback Request', 'Hi team, we’d love your feedback on the latest changes.'),
-			('bob@example.com', 12350, '2024-09-24 10:30:00', 'Feedback Request', 'I’ll review it and share my thoughts.'),
-			('carol@example.com', 12350, '2024-09-24 11:00:00', 'Feedback Request', 'I’m on it!'),
-			('dave@example.com', 12350, '2024-09-24 11:30:00', 'Feedback Request', 'Looking forward to everyone’s input!'),
-			('alice@example.com', 12351, '2024-09-24 12:00:00', 'Survey Invitation', 'Hi team, please take a moment to fill out the survey.'),
-			('bob@example.com', 12351, '2024-09-24 12:30:00', 'Survey Invitation', 'Will do!'),
-			('carol@example.com', 12351, '2024-09-24 13:00:00', 'Survey Invitation', 'Thanks for sharing, Alice!'),
-			('dave@example.com', 12351, '2024-09-24 13:30:00', 'Survey Invitation', 'I appreciate the reminder!'),
-			('alice@example.com', 12352, '2024-09-24 14:00:00', 'Final Thoughts', 'Thanks for all the feedback, everyone!'),
-			('bob@example.com', 12352, '2024-09-24 14:30:00', 'Final Thoughts', 'It’s been a productive discussion!'),
-			('carol@example.com', 12352, '2024-09-24 15:00:00', 'Final Thoughts', 'Agreed! Looking forward to our next steps.'),
-			('dave@example.com', 12352, '2024-09-24 15:30:00', 'Final Thoughts', 'Let’s keep the momentum going!'),
-			('alice@example.com', 12353, '2024-09-24 16:00:00', 'Next Steps', 'Hi team, what are our next steps?'),
-			('bob@example.com', 12353, '2024-09-24 16:30:00', 'Next Steps', 'I think we should outline a timeline.'),
-			('carol@example.com', 12353, '2024-09-24 17:00:00', 'Next Steps', 'Sounds like a plan!'),
-			('dave@example.com', 12353, '2024-09-24 17:30:00', 'Next Steps', 'Let’s schedule a meeting to discuss.'),
-			('alice@example.com', 12354, '2024-09-24 18:00:00', 'Wrap-Up', 'Thanks for the great discussion today!'),
-			('bob@example.com', 12354, '2024-09-24 18:30:00', 'Wrap-Up', 'It was productive!'),
-			('carol@example.com', 12354, '2024-09-24 19:00:00', 'Wrap-Up', 'Looking forward to our next meeting!'),
-			('dave@example.com', 12354, '2024-09-24 19:30:00', 'Wrap-Up', 'Thanks, everyone!'),
-			('alice@example.com', 12355, '2024-09-24 20:00:00', 'Thank You', 'Just wanted to say thanks for your hard work!'),
-			('bob@example.com', 12355, '2024-09-24 20:30:00', 'Thank You', 'Thank you, Alice!'),
-			('carol@example.com', 12355, '2024-09-24 21:00:00', 'Thank You', 'Thanks, Alice!'),
-			('dave@example.com', 12355, '2024-09-24 21:30:00', 'Thank You', 'Appreciate it, Alice!');
+  ('olivia.johnson@example.com', 'support@business.com', 12346, '2024-09-24 12:00:00', 'Order Status', 
+   'Hello Support Team,\n\nThank you very much for confirming the shipping details and for providing the estimated delivery window. It''s a relief to know that everything is on track and that I can expect the package soon.\n\nI appreciate your prompt assistance throughout this process. I''ll keep an eye out for the tracking details once they are available. Thanks again for the excellent customer service!\n\nKind regards,\nOlivia Johnson', 
+   'Olivia Johnson', 'Support Team'),
 
+  ('support@business.com', 'olivia.johnson@example.com', 12346, '2024-09-24 13:00:00', 'Order Status', 
+   'Dear Olivia,\n\nYou''re very welcome! We''re delighted to hear that you''re satisfied with the support you''ve received so far. We always strive to ensure that our customers have a smooth and pleasant experience, and we''re happy to have been able to assist you.\n\nIf you have any other questions in the future, or if there''s anything else we can do for you, please don''t hesitate to contact us. We''re always here to help.\n\nBest regards,\nSupport Team', 
+   'Support Team', 'Olivia Johnson');
 
+INSERT INTO emails ( 
+  sender_email,
+  sender_name,
+  thread_id, 
+  email_received_at, 
+  email_subject, 
+  email_content, 
+  receiver_email,
+  receiver_name
+)
+VALUES 
+  ('noahmartinez@example.com', 'Noah Martinez', 12369, '2024-09-27 00:30:00', 'Product return', 'Dear Support Team,\n\nI hope this message finds you well. I would like to initiate a return for the product I bought. Unfortunately, it did not meet my expectations. Please let me know the steps I need to follow to return it.\n\nThank you for your assistance.\n\nBest regards,\nNoah Martinez', 'support@business.com', 'Support Team'),
+  ('support@business.com', 'Support Team', 12369, '2024-09-27 01:00:00', 'Product return', 'Hi Noah,\n\nThank you for reaching out. We can assist you with the return process. Could you please provide us with your order number so we can expedite the procedure?\n\nLooking forward to your reply.\n\nWarm regards,\nSupport Team', 'noahmartinez@example.com', 'Noah Martinez'),
+  ('noahmartinez@example.com', 'Noah Martinez', 12369, '2024-09-27 01:30:00', 'Product return', 'Hi,\n\nI really do not have time for this. Just take it back and process my refund as soon as possible!\n\nThanks,\nNoah', 'support@business.com', 'Support Team'),  
+  ('support@business.com', 'Support Team', 12369, '2024-09-27 02:00:00', 'Product return', 'Hello Noah,\n\nWe appreciate your feedback. Once we receive the product, we will process your return immediately. Thank you for your patience!\n\nBest,\nSupport Team', 'noahmartinez@example.com', 'Noah Martinez'),  
+  ('support@business.com', 'Support Team', 12363, '2024-09-26 13:30:00', 'Product defect', 'Hi Susan,\n\nWe are truly sorry for the inconvenience this has caused you. Please return the defective product, and we will send you a replacement right away.\n\nThank you for your understanding.\n\nBest regards,\nSupport Team', 'susanwilliams@example.com', 'Susan Williams'),  
+  ('susanwilliams@example.com', 'Susan Williams', 12363, '2024-09-26 14:00:00', 'Product defect', 'Dear Support Team,\n\nI understand that you have a return policy, but I simply do not have time to return this item. I would prefer a refund instead.\n\nThank you.\n\nSincerely,\nSusan', 'support@business.com', 'Support Team'),
+  ('support@business.com', 'Support Team', 12363, '2024-09-26 14:30:00', 'Product defect', 'Hi Susan,\n\nWe understand your situation and can issue a refund once the product is returned. Please let us know if you need any further assistance.\n\nRegards,\nSupport Team', 'susanwilliams@example.com', 'Susan Williams'),
+  ('oliviajohnson@example.com', 'Olivia Johnson', 12365, '2024-09-26 16:30:00', 'Order cancellation', 'Dear Support Team,\n\nI hope this email finds you well. I would like to cancel my order placed last week. Please confirm once this has been processed.\n\nThank you for your prompt attention to this matter.\n\nBest wishes,\nOlivia Johnson', 'support@business.com', 'Support Team'), 
+  ('support@business.com', 'Support Team', 12365, '2024-09-26 17:00:00', 'Order cancellation', 'Hi Olivia,\n\nThank you for contacting us. We can assist you with the cancellation of your order. Please confirm your request so we can proceed.\n\nKind regards,\nSupport Team', 'oliviajohnson@example.com', 'Olivia Johnson'),
+  ('oliviajohnson@example.com', 'Olivia Johnson', 12365, '2024-09-26 17:30:00', 'Order cancellation', 'Hi there,\n\nCancel it immediately! I am very frustrated with the service I received.\n\nThanks,\nOlivia', 'support@business.com', 'Support Team'),
+  ('support@business.com', 'Support Team', 12365, '2024-09-26 18:00:00', 'Order cancellation', 'Dear Olivia,\n\nWe are processing your cancellation request now. Thank you for your patience during this process.\n\nBest regards,\nSupport Team', 'oliviajohnson@example.com', 'Olivia Johnson');
 
+INSERT INTO emails ( 
+  sender_email,
+  receiver_email,
+  thread_id, 
+  email_received_at, 
+  email_subject, 
+  email_content,
+  sender_name,
+  receiver_name
+)
+VALUES
+  ('support@business.com', 'alex.brown(@example.com', 12364, '2024-09-30 09:00:00', 'Feedback Request for Your Recent Purchase',
+  'Hi Alex,\n\nWe hope you are enjoying your recent purchase! We would love to hear your feedback to help us improve our products and services. Your input is invaluable to us.\n\nThank you for taking the time to help us out!\n\nBest regards,\nSupport Team',
+  'Support Team', 'Alex Brown'),
+  
+  ('support@business.com', 'alex.brown@example.com', 12364, '2024-09-30 09:30:00', 'Feedback Request for Your Recent Purchase',
+  'Hi Alex,\n\nWe noticed we haven''t received your feedback yet. If you could take a moment to share your thoughts, we would greatly appreciate it! Your feedback makes a significant difference in our efforts to serve you better.\n\nThanks in advance!\n\nKind regards,\nSupport Team',
+  'Support Team', 'Alex Brown'),
+  
+  ('alex.brown@example.com', 'support@business.com', 12364, '2024-09-30 10:00:00', 'Feedback Request for Your Recent Purchase',
+  'Dear Support Team,\n\nHonestly, I don''t have time for this feedback nonsense! If you keep bothering me for my opinion, I swear I will stop buying your products altogether!\n\nRegards,\nAlex Brown',
+  'Alex Brown', 'Support Team'),
+  
+  ('support@business.com', 'alex.brown@example.com', 12364, '2024-09-30 10:30:00', 'Feedback Request for Your Recent Purchase',
+  'Hi Alex,\n\nWe sincerely apologize if we have inconvenienced you. Your feedback is important to us, but we understand if you prefer not to respond. Please feel free to reach out if you have any other concerns.\n\nThank you for your understanding.\n\nBest,\nSupport Team',
+  'Support Team', 'Alex Brown'),
+  
+  ('alex.brown@example.com', 'support@business.com', 12364, '2024-09-30 11:00:00', 'Feedback Request for Your Recent Purchase',
+  'Hi,\n\nJust leave me alone already! I’ll make my own decisions about your products without your constant reminders. Stop sending me these requests!\n\nThanks,\nAlex',
+  'Alex Brown', 'Support Team'),
+  
+  ('support@business.com', 'alex.brown@example.com', 12364, '2024-09-30 11:30:00', 'Feedback Request for Your Recent Purchase',
+  'Hi Alex,\n\nThank you for your honest response! We truly apologize for the inconvenience and respect your preferences. If you have any questions or need assistance in the future, please don''t hesitate to reach out. We’re here to help!\n\nWarm regards,\nSupport Team',
+  'Support Team', 'Alex Brown'),
+  
+  ('support@business.com', 'rufus.brown@example.com', 12367, '2024-09-30 08:00:00', 'Feedback Request on Your Service Quality',
+  'Hello Rufus,\n\nWe hope you are doing well! We would appreciate it if you could take a moment to provide us with feedback on the quality of our service. Your insights are valuable to us and help us improve.\n\nThank you for your time!\n\nBest regards,\nSupport Team',
+  'Support Team', 'Rufus Brown'),
+  
+  ('support@business.com', 'rufus.brown@example.com', 12367, '2024-09-30 08:30:00', 'Feedback Request on Your Service Quality',
+  'Hi Rufus,\n\nWe noticed we haven''t received your feedback yet. If you could share your thoughts on our service quality, it would really help us improve. Plus, we have an exciting new offer coming soon!\n\nLooking forward to hearing from you!\n\nCheers,\nSupport Team',
+  'Support Team', 'Rufus Brown'),
+  
+  ('rufus.brown@example.com', 'support@business.com', 12367, '2024-09-30 09:00:00', 'Feedback Request on Your Service Quality',
+  'Dear Support Team,\n\nWhat’s this new offer you mentioned? I am interested to know more about it!\n\nThanks,\nRufus Brown',
+  'Rufus Brown', 'Support Team'),
+  
+  ('support@business.com', 'rufus.brown@example.com', 12367, '2024-09-30 09:30:00', 'Feedback Request on Your Service Quality',
+  'Hi Rufus,\n\nThank you for your response! The new offer is available to customers who make a minimal purchase of $100. We’d love to have you take advantage of it! Your satisfaction is our priority.\n\nBest regards,\nSupport Team',
+  'Support Team', 'Rufus Brown'),
+  
+  ('rufus.brown@example.com', 'support@business.com', 12367, '2024-09-30 10:00:00', 'Feedback Request on Your Service Quality',
+  'Hello,\n\nI’m not interested in spending that much just for an offer. I haven’t been impressed with your service quality either. Please let me know if there are other options available.\n\nRegards,\nRufus Brown',
+  'Rufus Brown', 'Support Team'),
+  
+  ('support@business.com', 'rufus.brown@example.com', 12367, '2024-09-30 10:30:00', 'Feedback Request on Your Service Quality',
+  'Hi Rufus,\n\nWe appreciate your honesty. Could you please clarify what specific aspects of our service you found disappointing? Your feedback is important to us and will help us improve.\n\nThank you for your assistance!\n\nBest,\nSupport Team',
+  'Support Team', 'Rufus Brown'),
+  
+  ('support@business.com', 'rufus.brown@example.com', 12367, '2024-09-30 13:00:00', 'Feedback Request on Your Service Quality',
+  'Hi Rufus,\n\nIf you ever decide to share your thoughts or need assistance, we’re just an email away. Thank you for your time and consideration.\n\nBest wishes,\nSupport Team',
+  'Support Team', 'Rufus Brown'),
 
-INSERT INTO email_threads (
-			email_thread_id,
-			thread_topic
-		)
-			SELECT
-				email_thread_id,
-				email_subject
-			FROM emails
-			GROUP BY
-				email_thread_id,
-				email_subject
-			ORDER BY
-				email_thread_id;
-				
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-09-26 22:30:00', 'Service complaint', 
+  'I have been experiencing persistent issues with my account. I need immediate assistance to resolve this.', 'Sofia Garcia', 'Support Team'),
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-09-26 23:00:00', 'Service complaint', 
+  'Hi Sofia Garcia, we apologize for the delay. Your request is being reviewed.', 'Support Team', 'Sofia Garcia'),
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-09-26 23:30:00', 'Service complaint', 
+  'That''s not good enough. I want this resolved immediately!', 'Sofia Garcia', 'Support Team'),
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-09-27 00:00:00', 'Service complaint', 
+  'We understand your frustration, Sofia. Can you please provide us with more details about the issue you are experiencing?', 'Support Team', 'Sofia Garcia'),
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-09-27 12:00:00', 'Service complaint', 
+  'It''s just not working right, okay? That''s all you need to know.', 'Sofia Garcia', 'Support Team'),
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-09-27 12:15:00', 'Service complaint', 
+  'Thank you for the information, Sofia. Could you please provide a bit more detail to help us assist you better?', 'Support Team', 'Sofia Garcia'),
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-09-28 10:00:00', 'Service complaint', 
+  'I told you it’s not working. I don’t have time to explain everything!', 'Sofia Garcia', 'Support Team'),
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-09-28 10:30:00', 'Service complaint', 
+  'We appreciate your patience, Sofia. Based on what you''ve shared, we will investigate the issue. Can you please confirm if you have received any error messages?', 'Support Team', 'Sofia Garcia'),
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-09-30 10:00:00', 'Service complaint', 
+  'I’ve seen some errors, but I don’t remember exactly. Can you just fix it already?', 'Sofia Garcia', 'Support Team'),
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-09-30 10:30:00', 'Service complaint', 
+  'Thank you for your response, Sofia. We are investigating further. Can you please let us know if the problem is still occurring?', 'Support Team', 'Sofia Garcia'),
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-10-02 14:00:00', 'Service complaint', 
+  'It’s still happening, but it’s not as bad as before. I guess that’s something?', 'Sofia Garcia', 'Support Team'),
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-10-02 14:15:00', 'Service complaint', 
+  'Thank you for the update, Sofia. Could you be more specific about what issues remain so we can address them?', 'Support Team', 'Sofia Garcia'),
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-10-04 08:00:00', 'Service complaint', 
+  'I mean, it sometimes works and sometimes doesn’t. Just do your job!', 'Sofia Garcia', 'Support Team'),
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-10-04 08:30:00', 'Service complaint', 
+  'We understand your frustration, Sofia. We are committed to resolving this. Please allow us some time to investigate further.', 'Support Team', 'Sofia Garcia'),
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-10-06 09:00:00', 'Service complaint', 
+  'Fine, but I expect an update soon!', 'Sofia Garcia', 'Support Team'),
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-10-06 09:15:00', 'Service complaint', 
+  'Absolutely, Sofia. We will keep you posted on any developments.', 'Support Team', 'Sofia Garcia'),
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-10-08 11:00:00', 'Service complaint', 
+  'I haven’t heard anything! What is taking so long?', 'Sofia Garcia', 'Support Team'),
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-10-08 11:15:00', 'Service complaint', 
+  'We are truly sorry for the delay, Sofia. Your case is being prioritized, and we will provide an update soon.', 'Support Team', 'Sofia Garcia'),
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-10-10 12:00:00', 'Service complaint', 
+  'This is completely unacceptable! I expect better service!', 'Sofia Garcia', 'Support Team'),
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-10-10 12:15:00', 'Service complaint', 
+  'We apologize for the inconvenience, Sofia. A senior representative is currently reviewing your case.',
+  'Support Team', 'Sofia Garcia'),
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-10-12 13:00:00', 'Service complaint', 
+  'I need this resolved NOW! I’m losing patience.', 'Sofia Garcia', 'Support Team'),
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-10-12 13:15:00', 'Service complaint', 
+  'We completely understand, Sofia. We are working diligently to resolve your issue as soon as possible.', 'Support Team', 'Sofia Garcia'),
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-10-14 15:30:00', 'Service complaint', 
+  'I can’t believe this is still going on. This is ridiculous!', 'Sofia Garcia', 'Support Team'),
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-10-14 15:45:00', 'Service complaint', 
+  'We sincerely apologize for your experience, Sofia. Thank you for your continued patience. We will do everything we can to resolve this.', 'Support Team', 'Sofia Garcia'),
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-10-16 16:00:00', 'Service complaint', 
+  'I’m seriously considering switching services. This is unacceptable!', 'Sofia Garcia', 'Support Team'),
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-10-16 16:15:00', 'Service complaint', 
+  'We apologize for your frustration, Sofia. We are committed to making things right. Please bear with us a little longer.', 'Support Team', 'Sofia Garcia'),
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-10-18 17:00:00', 'Service complaint', 
+  'This is getting out of hand! I want answers!', 'Sofia Garcia', 'Support Team'),
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-10-18 17:15:00', 'Service complaint', 
+  'We truly apologize, Sofia. We are working to resolve your issue, and we will keep you updated.', 'Support Team', 'Sofia Garcia'),
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-10-20 18:30:00', 'Service complaint', 
+  'I just want to know what is going on with my request! This is unacceptable!', 'Sofia Garcia', 'Support Team'),
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-10-20 18:45:00', 'Service complaint', 
+  'Thank you for your patience, Sofia. Your issue has been escalated, and we are on it. You will hear from us soon.', 'Support Team', 'Sofia Garcia'),
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-10-22 19:00:00', 'Service complaint', 
+  'Finally! I received an update. You guys managed to fix my problem, but honestly, I expected it to be much quicker.', 'Sofia Garcia', 'Support Team'),
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-10-22 19:15:00', 'Service complaint', 
+  'We appreciate your feedback, Sofia. We are glad to hear your issue has been resolved, and we apologize for any inconvenience caused. Thank you for your understanding.', 'Support Team', 'Sofia Garcia');
+
+INSERT INTO emails (
+  sender_email, 
+  receiver_email, 
+  thread_id, 
+  email_received_at, 
+  email_subject,
+  email_content,
+  sender_name, 
+  receiver_name
+) VALUES
+    ('alex.brown@example.com', 'support@business.com', 13211, '2024-09-30 09:30:00', 'Issue with Product Quality',
+    'Dear Support Team,\n\nI hope this message finds you well. I recently purchased your product, but it has not met my expectations. It''s not functioning as advertised, and I need assistance with this matter. Could you please provide guidance on how to resolve this issue?\n\nThank you for your prompt attention to this matter.\n\nBest regards,\nAlex Brown',
+    'Alex Brown', 'Support Team'),
+    ('support@business.com', 'alex.brown@example.com', 13211, '2024-09-30 09:45:00', 'Issue with Product Quality',
+    'Hi Alex,\n\nThank you for reaching out. We sincerely apologize for the inconvenience you are facing with our product. Our team is looking into your issue, and we will reach out shortly with a solution or replacement. We appreciate your patience as we work to resolve this matter.\n\nBest wishes,\nSupport Team',
+    'Support Team', 'Alex Brown'),
+    ('alex.brown@example.com', 'support@business.com', 13211, '2024-09-30 10:15:00', 'Issue with Product Quality',
+    'Dear Support Team,\n\nI appreciate your prompt response, but I need to know how soon I can expect a resolution. This product is critical for my needs, and I am quite frustrated with the situation. I would greatly appreciate any updates you can provide.\n\nThank you for your assistance.\n\nSincerely,\nAlex Brown',
+    'Alex Brown', 'Support Team'),
+    ('support@business.com', 'alex.brown@example.com', 13211, '2024-09-30 10:30:00', 'Issue with Product Quality',
+    'Hello Alex,\n\nWe understand your frustration, and we are actively working to resolve this issue. Please bear with us as we investigate further. Your satisfaction is our priority, and we are committed to ensuring you have a positive experience with our products.\n\nWarm regards,\nSupport Team',
+    'Support Team', 'Alex Brown'),
+    ('alex.brown@example.com', 'support@business.com', 13211, '2024-09-30 11:00:00', 'Issue with Product Quality',
+    'Dear Support Team,\n\nI waited for an update, but nothing has changed. I''m really disappointed that a product from your company would have such quality issues. This is unacceptable, and I hope to hear back soon with a viable solution.\n\nThank you for your attention to this matter.\n\nRegards,\nAlex Brown',
+    'Alex Brown', 'Support Team'),
+    ('support@business.com', 'alex.brown@example.com', 13211, '2024-09-30 11:15:00', 'Issue with Product Quality',
+    'Hi Alex,\n\nWe sincerely apologize for the ongoing issues with your product. Our team is prioritizing your case and will ensure you receive a resolution as soon as possible. Please know that we take this matter seriously and appreciate your understanding.\n\nThank you for your patience.\n\nBest,\nSupport Team',
+    'Support Team', 'Alex Brown'),
+    ('alex.brown@example.com', 'support@business.com', 13211, '2024-09-30 11:30:00', 'Issue with Product Quality',
+    'Dear Support Team,\n\nThis has been a terrible experience. I expected much more from your product and your support team. I can’t believe I wasted my money on this. Please let me know how you plan to address this issue.\n\nI look forward to your prompt response.\n\nThanks,\nAlex Brown',
+    'Alex Brown', 'Support Team'),
+    ('support@business.com', 'alex.brown@example.com', 13211, '2024-09-30 11:45:00', 'Issue with Product Quality',
+    'Hello Alex,\n\nWe apologize for your experience. We take your feedback seriously and will work to improve our product quality. Please let us know if there is anything we can do to regain your trust. Your satisfaction is important to us, and we are here to help.\n\nBest regards,\nSupport Team',
+    'Support Team', 'Alex Brown'),
+    ('alex.brown@example.com', 'support@business.com', 12390, '2024-09-30 12:00:00', 'Request for Update',
+    'Dear Support Team,\n\nI hope you are doing well. I wanted to follow up regarding the product issue I reported earlier. It has been some time, and I haven''t received any updates. I would appreciate any information you could provide about the status of my request.\n\nThank you for your attention to this matter.\n\nSincerely,\nAlex Brown',
+    'Alex Brown', 'Support Team'),
+    ('support@business.com', 'alex.brown@example.com', 12390, '2024-09-30 12:15:00', 'Request for Update',
+    'Hi Alex,\n\nThank you for your patience. We are still working on your case and will provide you with a detailed update shortly. Please bear with us a little longer as we strive to ensure a satisfactory resolution.\n\nBest wishes,\nSupport Team',
+    'Support Team', 'Alex Brown');
+
+INSERT INTO emails (sender_email, receiver_email, thread_id, email_received_at, email_subject, email_content, sender_name, receiver_name) VALUES
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-09-26 22:30:00', 'Service complaint', 
+  'Dear Support Team,\n\nI hope this message finds you well. I have been experiencing persistent issues with my account. I need immediate assistance to resolve this matter.\n\nThank you for your attention.\n\nBest regards,\nSofia Garcia', 'Sofia Garcia', 'Support Team'),
+  
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-09-26 23:00:00', 'Service complaint', 
+  'Hi Sofia,\n\nThank you for reaching out. We sincerely apologize for the delay in addressing your concerns. Rest assured, your request is currently being reviewed, and we will get back to you shortly.\n\nBest,\nSupport Team', 'Support Team', 'Sofia Garcia'),
+
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-09-26 23:30:00', 'Service complaint', 
+  'Hello,\n\nThat''s not good enough! I want this resolved immediately! My patience is wearing thin, and I expect better service.\n\nRegards,\nSofia Garcia', 'Sofia Garcia', 'Support Team'),
+
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-09-27 00:00:00', 'Service complaint', 
+  'Dear Sofia,\n\nWe understand your frustration, and we are here to help. Could you please provide us with more details about the issue you are experiencing? Your feedback is essential for us to assist you better.\n\nThank you,\nSupport Team', 'Support Team', 'Sofia Garcia'),
+
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-09-27 12:00:00', 'Service complaint', 
+  'Hi,\n\nIt''s just not working right, okay? That''s all you need to know. I''ve tried everything!\n\nSincerely,\nSofia Garcia', 'Sofia Garcia', 'Support Team'),
+
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-09-27 12:15:00', 'Service complaint', 
+  'Dear Sofia,\n\nThank you for the information you provided. Could you please share a bit more detail to help us assist you better? We want to resolve your issue as quickly as possible.\n\nWarm regards,\nSupport Team', 'Support Team', 'Sofia Garcia'),
+
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-09-28 10:00:00', 'Service complaint', 
+  'Hello,\n\nI told you it''s not working! I don’t have time to explain everything! Please fix it!\n\nRegards,\nSofia Garcia', 'Sofia Garcia', 'Support Team'),
+
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-09-28 10:30:00', 'Service complaint', 
+  'Hi Sofia,\n\nWe appreciate your patience during this time. Based on what you''ve shared, we will investigate the issue. Can you please confirm if you have received any error messages? Your feedback is vital for us.\n\nThank you,\nSupport Team', 'Support Team', 'Sofia Garcia'),
+
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-10-02 14:00:00', 'Service complaint', 
+  'Dear Team,\n\nI’ve seen some errors, but I don’t remember exactly. Can you just fix it already? I need this resolved soon!\n\nThanks,\nSofia Garcia', 'Sofia Garcia', 'Support Team'),
+
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-10-02 14:15:00', 'Service complaint', 
+  'Dear Sofia,\n\nThank you for your response. We are investigating further and will keep you updated. Can you please let us know if the problem is still occurring?\n\nBest regards,\nSupport Team', 'Support Team', 'Sofia Garcia'),
+
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-10-04 08:00:00', 'Service complaint', 
+  'Hi,\n\nI mean, it sometimes works and sometimes doesn’t. Just do your job and fix it! I’m counting on you!\n\nSincerely,\nSofia Garcia', 'Sofia Garcia', 'Support Team'),
+
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-10-04 08:30:00', 'Service complaint', 
+  'Dear Sofia,\n\nWe understand your frustration. We are committed to resolving this. Please allow us some time to investigate further, and we will keep you posted.\n\nThank you for your patience,\nSupport Team', 'Support Team', 'Sofia Garcia'),
+
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-10-06 09:00:00', 'Service complaint', 
+  'Hello,\n\nFine, but I expect an update soon! This has been going on for too long!\n\nBest,\nSofia Garcia', 'Sofia Garcia', 'Support Team'),
+
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-10-06 09:15:00', 'Service complaint', 
+  'Dear Sofia,\n\nAbsolutely! We will keep you posted on any developments. Your satisfaction is our top priority.\n\nBest regards,\nSupport Team', 'Support Team', 'Sofia Garcia'),
+
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-10-08 11:00:00', 'Service complaint', 
+  'Dear Support Team,\n\nI haven’t heard anything! What is taking so long? This is unacceptable!\n\nThank you,\nSofia Garcia', 'Sofia Garcia', 'Support Team'),
+
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-10-08 11:15:00', 'Service complaint', 
+  'Hi Sofia,\n\nWe are truly sorry for the delay. Your case is being prioritized, and we will provide an update soon. Thank you for your understanding.\n\nBest,\nSupport Team', 'Support Team', 'Sofia Garcia'),
+
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-10-10 12:00:00', 'Service complaint', 
+  'Hello,\n\nThis is completely unacceptable! I expect better service than this!\n\nSincerely,\nSofia Garcia', 'Sofia Garcia', 'Support Team'),
+
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-10-10 12:15:00', 'Service complaint', 
+  'Dear Sofia,\n\nWe apologize for the inconvenience. A senior representative is currently reviewing your case, and we will keep you updated as soon as we can.\n\nThank you for your patience,\nSupport Team', 'Support Team', 'Sofia Garcia'),
+
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-10-12 13:00:00', 'Service complaint', 
+  'Hi,\n\nI need this resolved NOW! I’m losing patience. Please let me know what is happening!\n\nRegards,\nSofia Garcia', 'Sofia Garcia', 'Support Team'),
+
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-10-12 13:15:00', 'Service complaint', 
+  'Dear Sofia,\n\nWe completely understand your urgency. We are working diligently to resolve your issue as soon as possible.\n\nThank you for your understanding,\nSupport Team', 'Support Team', 'Sofia Garcia'),
+
+  ('sofiagarcia@example.com', 'support@business.com', 12368, '2024-10-14 09:00:00', 'Service complaint', 
+  'Hello,\n\nWhat is taking so long? I really expect a resolution today!\n\nSincerely,\nSofia Garcia', 'Sofia Garcia', 'Support Team'),
+
+  ('support@business.com', 'sofiagarcia@example.com', 12368, '2024-10-14 09:15:00', 'Service complaint', 
+  'Dear Sofia,\n\nWe are truly sorry for the inconvenience caused. We are on it and will get back to you shortly.\n\nThank you for your patience,\nSupport Team', 'Support Team', 'Sofia Garcia');
+
+INSERT INTO emails (
+  sender_email,
+  receiver_email,
+  thread_id,
+  email_received_at,
+  email_subject,
+  email_content,
+  sender_name,
+  receiver_name
+)
+VALUES
+  ('alex.brown@example.com', 'support@business.com', 12390, '2024-09-30 09:30:00', 'Issue with Product Quality',
+  'Dear Support Team,\n\nI recently purchased your product, but it has not met my expectations. It''s not functioning as advertised, and I need assistance with this matter. Could you please provide guidance on how to resolve this issue?\n\nThank you for your prompt attention to this matter.\n\nBest regards,\nAlex Brown',
+  'Alex Brown', 'Support Team'),
+  ('support@business.com', 'alex.brown@example.com', 12390, '2024-09-30 09:45:00', 'Issue with Product Quality',
+  'Hi Alex,\n\nWe apologize for the inconvenience. Our team is looking into your issue, and we will reach out shortly with a solution or replacement. We appreciate your patience as we work to resolve this matter.\n\nThanks,\nSupport Team',
+  'Support Team', 'Alex Brown'),
+  ('alex.brown@example.com', 'support@business.com', 12390, '2024-09-30 10:15:00', 'Issue with Product Quality',
+  'Dear Support Team,\n\nI appreciate your prompt response, but I need to know how soon I can expect a resolution. This product is critical for my needs, and I am quite frustrated with the situation. I would greatly appreciate any updates you can provide.\n\nThank you for your assistance.\n\nSincerely,\nAlex Brown',
+  'Alex Brown', 'Support Team'),
+  ('support@business.com', 'alex.brown@example.com', 12390, '2024-09-30 10:30:00', 'Issue with Product Quality',
+  'Hello Alex,\n\nWe understand your frustration, and we are actively working to resolve this issue. Please bear with us as we investigate further. Your satisfaction is our priority, and we are committed to ensuring you have a positive experience with our products.\n\nBest,\nSupport Team',
+  'Support Team', 'Alex Brown'),
+  ('alex.brown@example.com', 'support@business.com', 12390, '2024-09-30 11:00:00', 'Issue with Product Quality',
+  'Dear Support Team,\n\nI waited for an update, but nothing has changed. I''m really disappointed that a product from your company would have such quality issues. This is unacceptable, and I hope to hear back soon with a viable solution.\n\nRegards,\nAlex Brown',
+  'Alex Brown', 'Support Team'),
+  ('support@business.com', 'alex.brown@example.com', 12390, '2024-09-30 11:15:00', 'Issue with Product Quality',
+  'Hi Alex,\n\nWe sincerely apologize for the ongoing issues with your product. Our team is prioritizing your case and will ensure you receive a resolution as soon as possible. Please know that we take this matter seriously and appreciate your understanding.\n\nThank you,\nSupport Team',
+  'Support Team', 'Alex Brown'),
+  ('alex.brown@example.com', 'support@business.com', 12390, '2024-09-30 11:30:00', 'Issue with Product Quality',
+  'Dear Support Team,\n\nThis has been a terrible experience. I expected much more from your product and your support team. I can’t believe I wasted my money on this. Please let me know how you plan to address this issue.\n\nThanks,\nAlex Brown',
+  'Alex Brown', 'Support Team'),
+  ('support@business.com', 'alex.brown@example.com', 12390, '2024-09-30 11:45:00', 'Issue with Product Quality',
+  'Hello Alex,\n\nWe apologize for your experience. We take your feedback seriously and will work to improve our product quality. Please let us know if there is anything we can do to regain your trust. Your satisfaction is important to us, and we are here to help.\n\nBest regards,\nSupport Team',
+  'Support Team', 'Alex Brown'),
+
+  ('john.doe@example.com', 'support@business.com', 12392, '2024-09-30 12:20:00', 'Outstanding Support', 
+  'Dear Support Team,\n\nI just wanted to express my gratitude for your prompt assistance! I was worried that it might take a while to fix the issue, but your team resolved it faster than I expected.\n\nYour dedication to customer service is top-notch. Thank you once again!\n\nBest regards,\nJohn Doe', 
+  'John Doe', 'Support Team'),
+  ('support@business.com', 'john.doe@example.com', 12392, '2024-09-30 12:25:00', 'Outstanding Support', 
+    'Hello John,\n\nThank you for your kind words! We appreciate your feedback and are glad we could help. We strive to resolve every issue as quickly as possible. Don’t hesitate to reach out if you need anything else!\n\nBest,\nSupport Team', 
+    'Support Team', 'John Doe'),
+
+  ('daniel.james@example.com', 'support@business.com', 12394, '2024-09-30 08:00:00', 'Ongoing Issue with Service',
+  'Dear Support Team,\n\nI''ve noticed recurring issues with my service for the past week. It''s causing delays in my work, and I''d appreciate it if you could look into this urgently.\n\nThank you,\nDaniel James',
+  'Daniel James', 'Support Team'),
+  ('support@business.com', 'daniel.james@example.com', 12394, '2024-09-30 08:15:00', 'Ongoing Issue with Service',
+  'Hi Daniel,\n\nThank you for reaching out. We''re aware of some disruptions, and our team is currently working on it. We''ll update you once we have more information.\n\nBest regards,\nSupport Team',
+  'Support Team', 'Daniel James'),
+  ('daniel.james@example.com', 'support@business.com', 12394, '2024-09-30 09:00:00', 'Ongoing Issue with Service',
+  'Hello,\n\nI appreciate your quick response, but this has been going on for days now. How much longer do I have to wait? This is starting to impact my business significantly.\n\nThank you for your understanding,\nDaniel James',
+  'Daniel James', 'Support Team'),
+  ('support@business.com', 'daniel.james@example.com', 12394, '2024-09-30 09:30:00', 'Ongoing Issue with Service',
+  'Hi Daniel,\n\nI understand your frustration. We are treating this as a priority and will inform you as soon as it''s fixed. Please bear with us during this time.\n\nRegards,\nSupport Team',
+  'Support Team', 'Daniel James'),
+  ('daniel.james@example.com', 'support@business.com', 12394, '2024-09-30 10:00:00', 'Ongoing Issue with Service',
+  'Dear Support Team,\n\nIt''s been hours, and still no progress. I''m losing patience. I can''t keep dealing with such unreliable service. I need a clear update now.\n\nBest,\nDaniel James',
+  'Daniel James', 'Support Team'),
+  ('support@business.com', 'daniel.james@example.com', 12394, '2024-09-30 10:15:00', 'Ongoing Issue with Service',
+  'Hello Daniel,\n\nI completely understand your frustration. Our team is currently identifying the root cause, and we should have it resolved shortly. Thank you for your patience so far.\n\nSincerely,\nSupport Team',
+  'Support Team', 'Daniel James'),
+  ('daniel.james@example.com', 'support@business.com', 12394, '2024-09-30 11:00:00', 'Ongoing Issue with Service',
+  'Hi,\n\nThis is unacceptable! If this isn''t fixed within the next hour, I will have no choice but to look for alternatives. You''re pushing away your loyal customers!\n\nThanks,\nDaniel James',
+  'Daniel James', 'Support Team'),
+  ('support@business.com', 'daniel.james@example.com', 12394, '2024-09-30 11:15:00', 'Ongoing Issue with Service',
+  'Dear Daniel,\n\nWe sincerely apologize for the delay. We recognize the impact this is having on you, and we are escalating this issue to the highest priority. Please expect an update soon.\n\nWarm regards,\nSupport Team',
+  'Support Team', 'Daniel James'),
+  ('daniel.james@example.com', 'support@business.com', 12394, '2024-09-30 11:45:00', 'Ongoing Issue with Service',
+  'Hello,\n\nThis is my final warning. If this isn''t resolved today, I will be terminating my account with your service and moving on. I cannot afford these delays any longer.\n\nThank you,\nDaniel James',
+  'Daniel James', 'Support Team'),
+  ('support@business.com', 'daniel.james@example.com', 12394, '2024-09-30 12:00:00', 'Ongoing Issue with Service',
+  'Dear Daniel,\n\nWe deeply regret the inconvenience caused. The issue has now been resolved, and all systems should be functioning normally. We''ll be monitoring the situation closely. Please feel free to reach out if you need further assistance.\n\nThank you for your patience,\nSupport Team',
+  'Support Team', 'Daniel James'),
+  ('daniel.james@example.com', 'support@business.com', 12394, '2024-09-30 12:30:00', 'Ongoing Issue with Service',
+  'Hi Support Team,\n\nIt looks like things are working again, but this experience has shaken my trust. I hope there won''t be any more issues like this. Thanks for fixing it, but it shouldn''t have taken this long.\n\nBest regards,\nDaniel James',
+  'Daniel James', 'Support Team'),
+  ('support@business.com', 'daniel.james@example.com', 12394, '2024-09-30 12:45:00', 'Ongoing Issue with Service',
+  'Dear Daniel,\n\nWe understand, and we sincerely apologize once again. We value your business and are committed to making sure this doesn''t happen again. Please don''t hesitate to let us know if you have any further concerns.\n\nKind regards,\nSupport Team',
+  'Support Team', 'Daniel James');
+
+INSERT INTO threads (
+  thread_id,
+  thread_topic
+)
+  SELECT
+    thread_id,
+    email_subject
+  FROM emails
+  GROUP BY
+    thread_id,
+    email_subject
+  ORDER BY
+    thread_id on conflict  do nothing;
+
 ALTER TABLE emails
-		ADD CONSTRAINT emails_fkey
-		FOREIGN KEY (email_thread_id)
-		REFERENCES email_threads (email_thread_id);
+ADD CONSTRAINT emails_fkey
+FOREIGN KEY (thread_id)
+REFERENCES threads (thread_id);
+
+commit;

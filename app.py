@@ -22,13 +22,13 @@ CORS(app)
 # to_dict Method is useful for serializing the object to JSON when sending responses through API endpoints.
 
 class EmailThread(db.Model):
-    __tablename__ = 'email_threads'
-    email_thread_id = db.Column(db.Integer, primary_key=True)
+    __tablename__ = 'threads'
+    thread_id = db.Column(db.Integer, primary_key=True)
     thread_topic = db.Column(db.String(50), nullable=False)
 
     def to_dict(self):
         return {
-            'email_thread_id': self.email_thread_id,
+            'thread_id': self.thread_id,
             'thread_topic': self.thread_topic
         }
 
@@ -36,8 +36,11 @@ class Email(db.Model):
     __tablename__ = 'emails'
     email_record_id = db.Column(db.Integer, primary_key=True)
     sender_email = db.Column(db.String(50), nullable=False)
-    email_thread_id = db.Column(db.Integer, db.ForeignKey('email_threads.email_thread_id'), nullable=False)
-    email_received_timestamp = db.Column(db.TIMESTAMP, nullable=True)
+    sender_name = db.Column(db.String(100),nullable=False)
+    receiver_email = db.Column(db.String(100), nullable=False)
+    receiver_name = db.Column(db.String(100),nullable=False)
+    thread_id = db.Column(db.Integer, db.ForeignKey('threads.thread_id'), nullable=False)
+    email_received_at = db.Column(db.TIMESTAMP, nullable=True)
     email_subject = db.Column(db.String(50), nullable=False)
     email_content = db.Column(db.Text, nullable=True)
 
@@ -48,8 +51,8 @@ class Email(db.Model):
         return {
             'email_record_id': self.email_record_id,
             'sender_email': self.sender_email,
-            'email_thread_id': self.email_thread_id,
-            'email_received_timestamp': self.email_received_timestamp.strftime('%B %d, %Y %I:%M %p') if self.email_received_timestamp else None,
+            'thread_id': self.thread_id,
+            'email_received_at': self.email_received_at.strftime('%B %d, %Y %I:%M %p') if self.email_received_at else None,
             'email_subject': self.email_subject,
             'email_content': self.email_content
         }
@@ -77,20 +80,20 @@ def get_all_threads():
             'seq_no': i,
             'sender': email.sender_email.split('@')[0],  # Extracting name from email
             'senderEmail': email.sender_email,
-            'date': email.email_received_timestamp.strftime('%B %d, %Y %I:%M %p') if email.email_received_timestamp else None,
+            'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
             'content': email.email_content,
             'isOpen': False  # Assuming 'isOpen' is false for simplicity
         } for i,email in  enumerate(thread.emails)]
         
         thread_list.append({
-            'threadId' : thread.email_thread_id,
+            'threadId' : thread.thread_id,
             'threadTitle': thread.thread_topic,
             'emails': emails
         })
 
     return jsonify(thread_list)
 
-# 3. GET specific email thread by email_thread_id with its emails
+# 3. GET specific email thread by thread_id with its emails
 @app.route('/all_email_by_thread_id/<int:thread_id>', methods=['GET'])
 def get_thread_by_id(thread_id):
     thread = EmailThread.query.get(thread_id)
@@ -101,7 +104,7 @@ def get_thread_by_id(thread_id):
     emails = [{
         'sender': email.sender_email.split('@')[0],  # Extracting name from email
         'senderEmail': email.sender_email,
-        'date': email.email_received_timestamp.strftime('%B %d, %Y %I:%M %p') if email.email_received_timestamp else None,
+        'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
         'content': email.email_content,
         'isOpen': False  # Assuming 'isOpen' is false for simplicity
     } for email in thread.emails]
@@ -114,19 +117,18 @@ def get_thread_by_id(thread_id):
     return jsonify(thread_data)
 
 def sortEmails(emailList):
-    return sorted(emailList, key=lambda email: email.email_received_timestamp)
+    return sorted(emailList, key=lambda email: email.email_received_at)
 
 @app.post('/summarize/<int:thread_id>')
 def summarize_thread_by_id(thread_id):
-    thread = EmailThread.query.options(
-    joinedload(EmailThread.emails).order_by(desc(Email.email_received_timestamp))
-).all()
+
+    thread = EmailThread.query.get(thread_id)
     if not thread:
         return jsonify({'error': 'Thread not found'}), 404
     
     emails = [{
         'senderEmail': email.sender_email,
-        'date': email.email_received_timestamp.strftime('%B %d, %Y %I:%M %p') if email.email_received_timestamp else None,
+        'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
         'content': email.email_content,
     } for email in thread.emails]
 
@@ -167,21 +169,24 @@ def create_email():
         return jsonify({'error': 'Missing required fields'}), 400
 
     # Create new EmailThread and Email instances
-    new_thread = EmailThread(thread_topic=data['email_subject'])
+    new_thread = EmailThread(thread_topic = data['email_subject'])
     db.session.add(new_thread)
     db.session.flush()  # This will generate an ID for the new thread before committing
 
     new_email = Email(
-        sender_email=data['sender_email'],
-        email_thread_id=new_thread.email_thread_id,
-        email_subject=data['email_subject'],
-        email_content=data['email_content'],
-        email_received_timestamp=db.func.now()  # Set timestamp to now
+        sender_email= data['sender_email'],
+        thread_id= new_thread.thread_id,
+        email_subject= data['email_subject'],
+        email_content= data['email_content'],
+        sender_name = data['sender_email'].split('@')[0],
+        receiver_email = 'alex@abc.com',
+        receiver_name = 'alex',
+        email_received_at=db.func.now()  # Set timestamp to now
     )
     db.session.add(new_email)
     db.session.commit()
 
-    return jsonify({'success': 'Email and thread created successfully', 'thread_id': new_thread.email_thread_id, 'email_record_id': new_email.email_record_id}), 201
+    return jsonify({'success': 'Email and thread created successfully', 'thread_id': new_thread.thread_id, 'email_record_id': new_email.email_record_id}), 201
 
 """"
 curl --request POST \
@@ -208,11 +213,14 @@ def add_email_to_thread(thread_id):
 
     # Create a new Email instance
     new_email = Email(
-        sender_email=data['sender_email'],
-        email_thread_id=thread_id,
-        email_subject=data['email_subject'],
-        email_content=data['email_content'],
-        email_received_timestamp=db.func.now()  # Set timestamp to now
+        sender_email= data['sender_email'],
+        thread_id= thread_id,
+        email_subject= data['email_subject'],
+        email_content= data['email_content'],
+        sender_name = data['sender_email'].split('@')[0],
+        receiver_email = 'alex@abc.com',
+        receiver_name = 'alex',
+        email_received_at=db.func.now()  # Set timestamp to now
     )
     db.session.add(new_email)
     db.session.commit()
