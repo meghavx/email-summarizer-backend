@@ -13,8 +13,6 @@ CREATE TABLE emails (
 			thread_topic CHAR(50)
 		);		
 
-SELECT * FROM EMAILS;
-
 INSERT INTO emails (
 			email_record_id,
 			sender_email,
@@ -23,11 +21,49 @@ INSERT INTO emails (
 			email_subject, email_content
 		)
 		VALUES
-			(1, 'alice@example.com', 12345, '2024-09-23 08:00:00', 'Project Discussion', 'Hi Bob, did you get a chance to review the project details?'),
-			(2, 'bob@example.com', 12345, '2024-09-23 09:30:00', 'Project Discussion', 'Hey Alice, yes! I think we should move forward with it.'),
-			(3, 'alice@example.com', 12345, '2024-09-23 10:00:00', 'Project Discussion', 'Great! Let’s set up a meeting to discuss further.'),
-			(4, 'bob@example.com', 12345, '2024-09-23 10:30:00', 'Project Discussion', 'How about tomorrow at 3 PM?'),
-			(5, 'carol@example.com', 12345, '2024-09-23 11:00:00', 'Project Discussion', 'Can I join the meeting as well?'),
+			(1, 'alice@example.com', 12345, '2024-09-23 08:00:00', 'Project Discussion', 'Hi Bob, 
+
+I hope this email finds you well. I wanted to follow up on our previous discussion about the project details. I have attached a revised proposal that includes some additional information. Please 
+review and let me know if there are any changes you would like to see.
+
+Best,
+Alice'),
+			(2, 'bob@example.com', 12345, '2024-09-23 09:30:00', 'Project Discussion', 'Hi Alice,
+
+Thank you for the revised proposal. I have reviewed it and would like to request a few changes. Please see below:
+
+* Can we include a more detailed project timeline?
+* Would it be possible to provide a breakdown of the estimated costs?
+
+Looking forward to hearing back from you.
+
+Best,
+Bob'),
+			(3, 'alice@example.com', 12345, '2024-09-23 10:00:00', 'Project Discussion', '
+        Hi Bob,
+
+Thank you for your feedback. I have updated the proposal to include a detailed project timeline and estimated costs. You can find the revised document attached.
+
+Please let me know if this meets your requirements. If not, please dont hesitate to reach out with any further changes.
+
+Best,
+Alice'),
+			(4, 'bob@example.com', 12345, '2024-09-23 10:30:00', 'Project Discussion', 'Hi Alice,
+
+I have reviewed the revised proposal and it looks great. I would like to schedule a meeting to discuss the project further. Would you be available tomorrow at 2 PM?
+
+Looking forward to hearing back from you.
+
+Best,
+Bob'),
+			(5, 'carol@example.com', 12345, '2024-09-23 11:00:00', 'Project Discussion', 'Hi Bob,
+
+I would be happy to meet with you tomorrow at 2 PM. I will make sure to bring any necessary documents and materials.
+
+Looking forward to our discussion!
+
+Best,
+Alice'),
 			(6, 'alice@example.com', 12345, '2024-09-23 11:15:00', 'Project Discussion', 'Absolutely, the more, the merrier!'),
 			(7, 'dave@example.com', 12345, '2024-09-23 11:30:00', 'Project Discussion', 'Count me in for the meeting too!'),
 			(8, 'bob@example.com', 12345, '2024-09-23 12:00:00', 'Project Discussion', 'Perfect! I’ll send a calendar invite.'),
@@ -44,7 +80,7 @@ INSERT INTO emails (
 			(19, 'alice@example.com', 12348, '2024-09-23 18:00:00', 'Meeting Reminder', 'Hi everyone, just a quick reminder about our meeting tomorrow.'),
 			(20, 'bob@example.com', 12348, '2024-09-23 18:30:00', 'Meeting Reminder', 'Thanks for the reminder, Alice!'),
 			(21, 'carol@example.com', 12348, '2024-09-23 19:00:00', 'Meeting Reminder', 'I’ll be there!'),
-			(22, 'dave@example.com', 12348, '2024-09-23 19:30:00', 'Meeting Reminder', 'See you all tomorrow!'),
+			(22, 'dave@example.com', 12348, '2024-09-23 19:30:00', 'Meeting Reminder', '          : See you all tomorrow!'),
 			(23, 'alice@example.com', 12349, '2024-09-24 08:00:00', 'Project Update', 'Morning team, here’s the latest update on the project.'),
 			(24, 'bob@example.com', 12349, '2024-09-24 08:30:00', 'Project Update', 'Thanks for the update, Alice! Looks good.'),
 			(25, 'carol@example.com', 12349, '2024-09-24 09:00:00', 'Project Update', 'I agree! Let’s keep up the momentum.'),
@@ -75,8 +111,6 @@ INSERT INTO emails (
 			(50, 'dave@example.com', 12355, '2024-09-24 21:30:00', 'Thank You', 'Appreciate it, Alice!');
 
 
-
-SELECT * FROM EMAIL_THREADS;
 
 
 INSERT INTO email_threads (

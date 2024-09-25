@@ -36,3 +36,9 @@ Type "help" for help.
 poc=# 
 
 ```
+
+### to run the application
+
+```bash
+$ python3 app.py
+```

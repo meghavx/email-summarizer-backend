@@ -71,6 +71,7 @@ def get_all_threads():
     threads = EmailThread.query.all()
     thread_list = []
     for thread in threads:
+        seqNo = 0
         emails = [{
             'sender': email.sender_email.split('@')[0],  # Extracting name from email
             'senderEmail': email.sender_email,
@@ -80,6 +81,7 @@ def get_all_threads():
         } for email in thread.emails]
         
         thread_list.append({
+            'threadId' : thread.email_thread_id,
             'threadTitle': thread.thread_topic,
             'emails': emails
         })
@@ -108,6 +110,38 @@ def get_thread_by_id(thread_id):
     }
 
     return jsonify(thread_data)
+
+def sortEmails(emailList):
+    return sorted(emailList, key=lambda email: email.email_received_timestamp)
+
+@app.post('/summarize/<int:thread_id>')
+def summarize_thread_by_id(thread_id):
+    thread = EmailThread.query.get(thread_id)
+    if not thread:
+        return jsonify({'error': 'Thread not found'}), 404
+    
+    emails = [{
+        'senderEmail': email.sender_email,
+        'date': email.email_received_timestamp.strftime('%B %d, %Y %I:%M %p') if email.email_received_timestamp else None,
+        'content': email.email_content,
+    } for email in thread.emails]
+
+    request_body = {
+        'threadTitle': thread.thread_topic,
+        'emails': emails
+    }
+
+    """
+    # Call API (POST) endpoint
+    response = generate_summary(request_body)
+    thread_summary = ThreadSummary(
+        thread_id = thread.thread_id,
+        summary_content = str(response)
+    )
+    db.session.add(thread_summary)
+    db.session.commit()    
+    """
+    return jsonify({'summary':"Here is the summary of the data...summary summary summary"})
 
 # Run the application
 if __name__ == '__main__':
