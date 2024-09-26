@@ -5,6 +5,9 @@ from flask_cors import CORS
 from sqlalchemy.orm import joinedload
 from sqlalchemy import desc
 import random
+from sqlalchemy import Enum
+import requests
+from flask import url_for
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -58,6 +61,72 @@ class Email(db.Model):
             'email_content': self.email_content
         }
 
+# Summaries model
+class Summary(db.Model):
+    __tablename__ = 'summaries'
+    summary_id = db.Column(db.Integer, primary_key=True)  # SERIAL equivalent
+    thread_id = db.Column(db.Integer, db.ForeignKey('threads.thread_id'), nullable=False)  # Foreign key to threads
+    summary_content = db.Column(db.Text, nullable=False)
+    summary_created_at = db.Column(db.TIMESTAMP, default=db.func.now())  # Default to current timestamp
+    summary_modified_at = db.Column(db.TIMESTAMP, default=db.func.now(), onupdate=db.func.now())  # Auto-update on modification
+
+    # Relationship to Thread
+    thread = db.relationship('EmailThread', backref=db.backref('summaries', lazy=True))
+
+    def to_dict(self):
+        return {
+            'summary_id': self.summary_id,
+            'thread_id': self.thread_id,
+            'summary_content': self.summary_content,
+            'summary_created_at': self.summary_created_at.strftime('%B %d, %Y %I:%M %p'),
+            'summary_modified_at': self.summary_modified_at.strftime('%B %d, %Y %I:%M %p')
+        }
+
+ # 4. SBP-3 [ 26th Sept 2024 ]
+
+# Modified as per UI requirements
+class SentimentEnum(db.Enum):
+    CRITICAL = 'Critical'
+    NEEDS_ATTENTION = 'Needs attention'
+    NEUTRAL = 'Neutral'
+    POSITIVE = 'Positive'
+
+# EmailThreadSentiment model
+class EmailThreadSentiment(db.Model):
+    __tablename__ = 'email_thread_sentiment'
+    sentiment_id = db.Column(db.Integer, primary_key = True)    # Primary key to email_thread_sentiment
+    thread_id = db.Column(db.Integer, db.ForeignKey('threads.thread_id'), nullable=False, primary_key=True)  # Foreign key to threads
+    sentiments = db.Column(Enum('Critical', 'Needs attention', 'Neutral', 'Positive', name='sentiment'), nullable=False)
+    timestamp = db.Column(db.TIMESTAMP, default=db.func.now()) 
+    # Relationship to Thread
+    thread = db.relationship('EmailThread', backref=db.backref('sentiments', lazy=True))
+
+    @classmethod
+    def save_sentiment(cls, thread_id, sentiment_category):
+        # Check if sentiment already exists for this thread
+        existing_record = cls.query.filter_by(thread_id=thread_id).first()
+
+        if existing_record:
+            existing_record.sentiments = sentiment_category   # Update sentiment
+            existing_record.timestamp = db.func.now() # Update timestamp
+        else:
+            # Create a new sentiment record
+            new_sentiment = cls(
+                thread_id=thread_id,
+                sentiments=sentiment_category,
+                timestamp=db.func.now()
+            )
+            db.session.add(new_sentiment)
+        
+        db.session.commit()
+
+    def to_dict(self):
+        return {
+            'thread_id': self.thread_id,
+            'sentiments': self.sentiments,
+            'timestamp': self.timestamp.strftime('%B %d, %Y %I:%M %p')
+        }
+
 # Routes
 
 @app.route('/')
@@ -78,6 +147,13 @@ def get_all_threads():
     thread_list = []
     sentiments = ['neutral','positive','needs_attention','critical'] # temp
     for thread in threads:
+        try:
+            sentiment_response = requests.post(f'http://localhost:5000/generate_sentiment/{thread.thread_id}')
+            sentiment_data = sentiment_response.json()
+            sentiment = sentiment_data.get('overall_sentiment', 'neutral')  # Default to 'neutral' if missing
+        except Exception as e:
+            print(f"Error in fetching sentiment for thread {thread.thread_id}: {e}")
+            sentiment = 'neutral'  # Fallback sentiment if the request fails
         sorted_emails = sorted(
             thread.emails, 
             key=lambda email: email.email_received_at or db.func.now(), 
@@ -99,7 +175,7 @@ def get_all_threads():
             'threadId' : thread.thread_id,
             'threadTitle': thread.thread_topic,
             'emails': emails,
-            'sentiment': sentiments[random.randint(0,len(sentiments)-1)] # Here sentiments which would be generated shall be fetched.
+            'sentiment': sentiment # sentiments[random.randint(0,len(sentiments)-1)] # Here sentiments which would be generated shall be fetched.
         })
 
     return jsonify(thread_list)
@@ -237,6 +313,56 @@ def add_email_to_thread(thread_id):
     db.session.commit()
 
     return jsonify({'success': 'Email added to thread', 'email_record_id': new_email.email_record_id}), 201
+
+@app.route('/generate_sentiment/<int:email_thread_id>', methods=['POST'])
+def generate_sentiment(email_thread_id):
+    # Fetch the email thread based on email_thread_id
+    email_thread = EmailThread.query.get(email_thread_id)
+    if not email_thread:
+        return jsonify({'error': 'Email thread not found'}), 404
+    
+    # Fetch all emails related to the thread
+    emails = email_thread.emails
+    
+    if not emails:
+        return jsonify({'error': 'No emails found in this thread.'}), 404
+    """
+    AI team's function will come here, we are expecting a integer between 1 to 10.
+    with 0.5 being positive and 
+    """
+    polarity = random.randint(1,10)
+
+    # Determine overall sentiment category based on polarity
+    if polarity > 8:
+        sentiment_category = "Positive"
+    elif 5 < polarity <= 8:
+        sentiment_category = "Needs attention"
+    elif polarity == 5:
+        sentiment_category = "Neutral"
+    else:
+        sentiment_category = "Critical"
+
+    # Saving to DB with table name : email_thread_sentiment
+    try:
+        EmailThreadSentiment.save_sentiment(email_thread_id, sentiment_category)
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+
+    # Response body for UI
+    sentiment_response = ""
+    if (sentiment_category == 'Postive'):
+        sentiment_response = 'postive'
+    elif (sentiment_category == 'Critical'):
+        sentiment_response = 'critical'
+    elif (sentiment_category == 'Needs attention'):
+        sentiment_response = 'needs_attention'
+    elif (sentiment_category == 'Neutral'):
+        sentiment_response = 'neutral'
+    else: # Something went wrong here
+        sentiment_response = 'neutral'
+
+    response = { 'overall_sentiment': sentiment_response }
+    return jsonify(response), 200
 
 # Run the application
 if __name__ == '__main__':

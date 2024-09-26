@@ -12,7 +12,7 @@
 ```
 $ python3 -m venv flask_env
 $ source flask_env/bin/activate
-$ pip3 install flask flask_sqlalchemy psycopg2 flask-cors
+$ pip3 install -r requirements.txt
 ```
 
 #### Setting up postgres
