@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from sqlalchemy.orm import joinedload
 from sqlalchemy import desc
+import random
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -73,9 +74,18 @@ def get_all_emails():
 # 2. GET all email threads with their associated emails
 @app.route('/all_email_threads', methods=['GET'])
 def get_all_threads():
-    threads = EmailThread.query.all()
+    threads = EmailThread.query.order_by('thread_id').all()
     thread_list = []
+    sentiments = ['neutral','positive','needs_attention','critical'] # temp
     for thread in threads:
+        sorted_emails = sorted(
+            thread.emails, 
+            key=lambda email: email.email_received_at or db.func.now(), 
+            reverse=True
+        )
+        """
+        Sentiment analysis should be fetched here
+        """
         emails = [{
             'seq_no': i,
             'sender': email.sender_email.split('@')[0],  # Extracting name from email
@@ -83,12 +93,13 @@ def get_all_threads():
             'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
             'content': email.email_content,
             'isOpen': False  # Assuming 'isOpen' is false for simplicity
-        } for i,email in  enumerate(thread.emails)]
+        } for i,email in  enumerate(sorted_emails)]
         
         thread_list.append({
             'threadId' : thread.thread_id,
             'threadTitle': thread.thread_topic,
-            'emails': emails
+            'emails': emails,
+            'sentiment': sentiments[random.randint(0,len(sentiments)-1)] # Here sentiments which would be generated shall be fetched.
         })
 
     return jsonify(thread_list)
@@ -165,20 +176,20 @@ def create_email():
     data = request.json  # Parse the incoming JSON data
 
     # Validate the necessary fields
-    if not all(k in data for k in ("sender_email", "email_subject", "email_content")):
+    if not all(k in data for k in ("senderEmail", "subject", "content")):
         return jsonify({'error': 'Missing required fields'}), 400
 
     # Create new EmailThread and Email instances
-    new_thread = EmailThread(thread_topic = data['email_subject'])
+    new_thread = EmailThread(thread_topic = data['subject'])
     db.session.add(new_thread)
     db.session.flush()  # This will generate an ID for the new thread before committing
 
     new_email = Email(
-        sender_email= data['sender_email'],
+        sender_email= data['senderEmail'],
         thread_id= new_thread.thread_id,
-        email_subject= data['email_subject'],
-        email_content= data['email_content'],
-        sender_name = data['sender_email'].split('@')[0],
+        email_subject= data['subject'],
+        email_content= data['content'],
+        sender_name = data['senderEmail'].split('@')[0],
         receiver_email = 'alex@abc.com',
         receiver_name = 'alex',
         email_received_at=db.func.now()  # Set timestamp to now
@@ -203,7 +214,7 @@ def add_email_to_thread(thread_id):
     data = request.json  # Parse the incoming JSON data
     
     # Validate the necessary fields
-    if not all(k in data for k in ("sender_email", "email_subject", "email_content")):
+    if not all(k in data for k in ("senderEmail", "subject", "content")):
         return jsonify({'error': 'Missing required fields'}), 400
 
     # Check if the thread exists
@@ -213,11 +224,11 @@ def add_email_to_thread(thread_id):
 
     # Create a new Email instance
     new_email = Email(
-        sender_email= data['sender_email'],
+        sender_email= data['senderEmail'],
         thread_id= thread_id,
-        email_subject= data['email_subject'],
-        email_content= data['email_content'],
-        sender_name = data['sender_email'].split('@')[0],
+        email_subject= data['subject'],
+        email_content= data['content'],
+        sender_name = data['senderEmail'].split('@')[0],
         receiver_email = 'alex@abc.com',
         receiver_name = 'alex',
         email_received_at=db.func.now()  # Set timestamp to now
