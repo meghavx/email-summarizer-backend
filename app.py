@@ -328,16 +328,14 @@ def generate_sentiment(email_thread_id):
         return jsonify({'error': 'No emails found in this thread.'}), 404
     """
     AI team's function will come here, we are expecting a integer between 1 to 10.
-    with 0.5 being positive and 
     """
     polarity = random.randint(1,10)
-
     # Determine overall sentiment category based on polarity
-    if polarity > 8:
+    if polarity > 6:
         sentiment_category = "Positive"
-    elif 5 < polarity <= 8:
+    elif 3 < polarity <= 6:
         sentiment_category = "Needs attention"
-    elif polarity == 5:
+    elif polarity == 3:
         sentiment_category = "Neutral"
     else:
         sentiment_category = "Critical"
@@ -350,8 +348,8 @@ def generate_sentiment(email_thread_id):
 
     # Response body for UI
     sentiment_response = ""
-    if (sentiment_category == 'Postive'):
-        sentiment_response = 'postive'
+    if (sentiment_category == 'Positive'):
+        sentiment_response = 'positive'
     elif (sentiment_category == 'Critical'):
         sentiment_response = 'critical'
     elif (sentiment_category == 'Needs attention'):
@@ -359,6 +357,7 @@ def generate_sentiment(email_thread_id):
     elif (sentiment_category == 'Neutral'):
         sentiment_response = 'neutral'
     else: # Something went wrong here
+        print ("Something went wrong with sentiment_response: ",sentiment_category,)
         sentiment_response = 'neutral'
 
     response = { 'overall_sentiment': sentiment_response }
