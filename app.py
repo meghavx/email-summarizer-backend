@@ -2,12 +2,11 @@
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from sqlalchemy.orm import joinedload
-from sqlalchemy import desc
 import random
 from sqlalchemy import Enum
 import requests
-from flask import url_for
+import ollama
+from flask import Response, stream_with_context
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -218,35 +217,38 @@ def summarize_thread_by_id(thread_id):
         'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
         'content': email.email_content,
     } for email in thread.emails]
+  
+    prompt = f"""Please quickly summarize the following email thread titled '{thread.thread_topic}' in 2-3 points. 
+                Include the main points, important decisions, and highlight any significant dates. Here is the list of emails in the thread:\n\n"""
 
-    request_body = {
-        'threadTitle': thread.thread_topic,
-        'emails': emails
-    }
+    # Iterate through the emails and format them into a readable string
+    for email in emails:
+        sender = email['senderEmail']
+        date = email['date']
+        content = email['content']
+    
+        email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
+        prompt += email_entry
 
-    """
-    # Call API (POST) endpoint
-    response = generate_summary(request_body)
-    thread_summary = ThreadSummary(
-        thread_id = thread.thread_id,
-        summary_content = str(response)
-    )
-    db.session.add(thread_summary)
-    db.session.commit()    
-    """
-    return jsonify({'summary':"Here is the summary of the data...summary summary summary"})
+    # Ollama code
+    stream = ollama.chat(
+    model='llama3.1',
+    messages=[{'role': 'user', 'content': prompt}],
+    stream=True,)
 
-"""
-curl --request POST \
-  --url http://localhost:5000/create/email \
-  --header 'Content-Type: application/json' \
-  --header 'User-Agent: insomnia/10.0.0' \
-  --data '{
-	"sender_email": "tushar@abc.com",
-	"email_subject": "Enquiry about refund",
-	"email_content" : "I wanted to know what happend to my refund. Thanks"
-}'
-"""
+     # Generator to stream the chunks as they arrive
+    def generate_summary():
+        first_chunk = True
+        for chunk in stream:
+            # Ensure proper JSON formatting for streaming chunks
+            if not first_chunk:
+                yield ' '
+            yield chunk['message']['content']
+            first_chunk = False
+
+    # Return a streaming response using Flask's Response object
+    return Response(stream_with_context(generate_summary()), content_type='application/json')
+
 @app.route('/create/email', methods=['POST'])
 def create_email():
     data = request.json  # Parse the incoming JSON data
@@ -275,16 +277,6 @@ def create_email():
 
     return jsonify({'success': 'Email and thread created successfully', 'thread_id': new_thread.thread_id, 'email_record_id': new_email.email_record_id}), 201
 
-""""
-curl --request POST \
-  --url http://localhost:5000/create/email/2 \
-  --header 'Content-Type: application/json' \
-  --data '{
-	"sender_email" : "nehal@abc.com", 
-	"email_subject": "refund",
-	"email_content": "asdasdasdas "
-}'
-"""
 @app.route('/create/email/<int:thread_id>', methods=['POST'])
 def add_email_to_thread(thread_id):
     data = request.json  # Parse the incoming JSON data
