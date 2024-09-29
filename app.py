@@ -1,29 +1,17 @@
-
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-import random
 from sqlalchemy import Enum
-import requests
 import ollama
 from flask import Response, stream_with_context
+import PyPDF2
 
-# Initialize Flask app
 app = Flask(__name__)
 
-# Configure the PostgreSQL database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://ruchita:qwerty@localhost/poc'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
-# Initialize the database
 db = SQLAlchemy(app)
 CORS(app)
-# Models
-# These represent the tables identical in database
-
-
-# to_dict Method is useful for serializing the object to JSON when sending responses through API endpoints.
-
 class EmailThread(db.Model):
     __tablename__ = 'threads'
     thread_id = db.Column(db.Integer, primary_key=True)
@@ -46,8 +34,6 @@ class Email(db.Model):
     email_received_at = db.Column(db.TIMESTAMP, nullable=True)
     email_subject = db.Column(db.String(50), nullable=False)
     email_content = db.Column(db.Text, nullable=True)
-
-    # Relationship to EmailThread
     email_thread = db.relationship('EmailThread', backref=db.backref('emails', lazy=True))
 
     def to_dict(self):
@@ -60,7 +46,6 @@ class Email(db.Model):
             'email_content': self.email_content
         }
 
-# Summaries model
 class Summary(db.Model):
     __tablename__ = 'summaries'
     summary_id = db.Column(db.Integer, primary_key=True)  # SERIAL equivalent
@@ -68,8 +53,6 @@ class Summary(db.Model):
     summary_content = db.Column(db.Text, nullable=False)
     summary_created_at = db.Column(db.TIMESTAMP, default=db.func.now())  # Default to current timestamp
     summary_modified_at = db.Column(db.TIMESTAMP, default=db.func.now(), onupdate=db.func.now())  # Auto-update on modification
-
-    # Relationship to Thread
     thread = db.relationship('EmailThread', backref=db.backref('summaries', lazy=True))
 
     def to_dict(self):
@@ -81,16 +64,12 @@ class Summary(db.Model):
             'summary_modified_at': self.summary_modified_at.strftime('%B %d, %Y %I:%M %p')
         }
 
- # 4. SBP-3 [ 26th Sept 2024 ]
-
-# Modified as per UI requirements
 class SentimentEnum(db.Enum):
     CRITICAL = 'Critical'
     NEEDS_ATTENTION = 'Needs attention'
     NEUTRAL = 'Neutral'
     POSITIVE = 'Positive'
 
-# EmailThreadSentiment model
 class EmailThreadSentiment(db.Model):
     __tablename__ = 'email_thread_sentiment'
     sentiment_id = db.Column(db.Integer, primary_key = True)    # Primary key to email_thread_sentiment
@@ -126,41 +105,33 @@ class EmailThreadSentiment(db.Model):
             'timestamp': self.timestamp.strftime('%B %d, %Y %I:%M %p')
         }
 
-# Routes
-
-@app.route('/')
-def hello():
-    return "Hello, Ruchita!"
-
-# 1. GET all emails
-@app.route('/all_emails', methods=['GET'])
-def get_all_emails():
-    emails = Email.query.all()
-    emails_list = [email.to_dict() for email in emails]
-    return jsonify(emails_list)
-
-# 2. GET all email threads with their associated emails
 @app.route('/all_email_threads', methods=['GET'])
 def get_all_threads():
     threads = EmailThread.query.order_by('thread_id').all()
     thread_list = []
-    sentiments = ['neutral','positive','needs_attention','critical'] # temp
+    
     for thread in threads:
-        try:
-            sentiment_response = requests.post(f'http://localhost:5000/generate_sentiment/{thread.thread_id}')
-            sentiment_data = sentiment_response.json()
-            sentiment = sentiment_data.get('overall_sentiment', 'neutral')  # Default to 'neutral' if missing
-        except Exception as e:
-            print(f"Error in fetching sentiment for thread {thread.thread_id}: {e}")
-            sentiment = 'neutral'  # Fallback sentiment if the request fails
         sorted_emails = sorted(
             thread.emails, 
             key=lambda email: email.email_received_at or db.func.now(), 
             reverse=True
         )
-        """
-        Sentiment analysis should be fetched here
-        """
+        sentiment_record = EmailThreadSentiment.query.filter_by(thread_id=thread.thread_id).first()
+        
+        sentiment_ = sentiment_record.sentiments if sentiment_record else 'Positive'
+        sentiment = ""
+        if (sentiment_ == 'Positive'):
+            sentiment = "postive"
+        elif (sentiment_ == 'Neutral'):
+            sentiment = 'neutral'
+        elif (sentiment_ == 'Needs attention'):
+            sentiment = 'needs_attention'
+        elif (sentiment_ == 'Critical'):
+            sentiment = 'critical'
+        else:
+            print ("something went wrong")
+            sentiment = 'positive'
+
         emails = [{
             'seq_no': i,
             'sender': email.sender_email.split('@')[0],  # Extracting name from email
@@ -168,18 +139,17 @@ def get_all_threads():
             'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
             'content': email.email_content,
             'isOpen': False  # Assuming 'isOpen' is false for simplicity
-        } for i,email in  enumerate(sorted_emails)]
+        } for i, email in enumerate(sorted_emails)]
         
         thread_list.append({
-            'threadId' : thread.thread_id,
+            'threadId': thread.thread_id,
             'threadTitle': thread.thread_topic,
             'emails': emails,
-            'sentiment': sentiment # sentiments[random.randint(0,len(sentiments)-1)] # Here sentiments which would be generated shall be fetched.
+            'sentiment': sentiment  
         })
 
     return jsonify(thread_list)
 
-# 3. GET specific email thread by thread_id with its emails
 @app.route('/all_email_by_thread_id/<int:thread_id>', methods=['GET'])
 def get_thread_by_id(thread_id):
     thread = EmailThread.query.get(thread_id)
@@ -221,7 +191,6 @@ def summarize_thread_by_id(thread_id):
     prompt = f"""Please quickly summarize the following email thread titled '{thread.thread_topic}' in 2-3 points. 
                 Include the main points, important decisions, and highlight any significant dates. Here is the list of emails in the thread:\n\n"""
 
-    # Iterate through the emails and format them into a readable string
     for email in emails:
         sender = email['senderEmail']
         date = email['date']
@@ -232,11 +201,10 @@ def summarize_thread_by_id(thread_id):
 
     # Ollama code
     stream = ollama.chat(
-    model='llama3.1',
+    model='llama3.2',
     messages=[{'role': 'user', 'content': prompt}],
     stream=True,)
 
-     # Generator to stream the chunks as they arrive
     def generate_summary():
         first_chunk = True
         for chunk in stream:
@@ -315,13 +283,46 @@ def generate_sentiment(email_thread_id):
     
     # Fetch all emails related to the thread
     emails = email_thread.emails
-    
     if not emails:
         return jsonify({'error': 'No emails found in this thread.'}), 404
+
+    # Prepare the LLM prompt to assess sentiment based on the email thread
+    prompt = f"""
+    Please evaluate the sentiment of the following email thread based on a scale from 1 to 10. The sentiment categories are as follows:
+    
+    - Critical (1-2)
+    - Warning (3)
+    - Neutral (4-6)
+    - Positive (7-10)
+    
+    Only return a single number from 1 to 10, and nothing else, based on the sentiment of the thread.
+
+    Email thread title: {email_thread.thread_topic}
+
+    Emails:
     """
-    AI team's function will come here, we are expecting a integer between 1 to 10.
-    """
-    polarity = random.randint(1,10)
+    
+    # Iterate through the emails and format them into a readable string for the LLM
+    for email in emails:
+        sender = email.sender_email
+        date = email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None
+        content = email.email_content
+        email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
+        prompt += email_entry
+
+    # Send the prompt to the LLM (replace ollama.chat with appropriate API)
+    response = ollama.chat(
+        model='llama3.2',
+        messages=[{'role': 'user', 'content': prompt}],
+    )
+
+    print ("response",response['message']['content'].strip())
+    # Extract the numeric sentiment (between 1 and 10)
+    try:
+        polarity = int(response['message']['content'].strip())
+    except ValueError:
+        return jsonify({'error': 'Invalid response from the LLM. Expected a number.'}), 500
+
     # Determine overall sentiment category based on polarity
     if polarity > 6:
         sentiment_category = "Positive"
@@ -332,28 +333,69 @@ def generate_sentiment(email_thread_id):
     else:
         sentiment_category = "Critical"
 
-    # Saving to DB with table name : email_thread_sentiment
+    # Save the sentiment to the database (EmailThreadSentiment table)
     try:
         EmailThreadSentiment.save_sentiment(email_thread_id, sentiment_category)
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
 
-    # Response body for UI
-    sentiment_response = ""
-    if (sentiment_category == 'Positive'):
-        sentiment_response = 'positive'
-    elif (sentiment_category == 'Critical'):
-        sentiment_response = 'critical'
-    elif (sentiment_category == 'Needs attention'):
-        sentiment_response = 'needs_attention'
-    elif (sentiment_category == 'Neutral'):
-        sentiment_response = 'neutral'
-    else: # Something went wrong here
-        print ("Something went wrong with sentiment_response: ",sentiment_category,)
-        sentiment_response = 'neutral'
+    # Response body for UI with a normalized sentiment label
+    sentiment_response = {
+        'Positive': 'positive',
+        'Critical': 'critical',
+        'Needs attention': 'needs_attention',
+        'Neutral': 'neutral'
+    }.get(sentiment_category, 'neutral')  # Default to 'neutral' if something goes wrong
 
     response = { 'overall_sentiment': sentiment_response }
     return jsonify(response), 200
+
+@app.route('/generate_customer_response', methods=['POST'])
+def generate_customer_response():
+    data = request.json
+    if not data or 'email_content' not in data:
+        return jsonify({'error': 'Request must contain email content'}), 400
+
+    customer_email_content = data['email_content']
+
+    # Read SOP PDF content
+    sop_path = './uploads/SOP.pdf'
+    try:
+        with open(sop_path, 'rb') as file:
+            reader = PyPDF2.PdfReader(file)
+            sop_content = " ".join([page.extract_text() for page in reader.pages])
+    except FileNotFoundError:
+        return jsonify({'error': 'SOP file not found'}), 404
+
+    # Create prompt with SOP and customer email content
+    prompt = f"""
+    Based on the following Standard Operating Procedure (SOP) and the email content from the customer, generate a customer support email response.
+
+    SOP:
+    {sop_content}
+
+    Customer Email:
+    {customer_email_content}
+
+    Please draft a response that addresses the customer's concerns while adhering to the SOP guidelines.
+    """
+
+    # Ollama API call for response generation
+    stream = ollama.chat(
+        model='llama3.2',
+        messages=[{'role': 'user', 'content': prompt}],
+        stream=True,
+    )
+
+    def generate_response():
+        first_chunk = True
+        for chunk in stream:
+            if not first_chunk:
+                yield ' '
+            yield chunk['message']['content']
+            first_chunk = False
+
+    return Response(stream_with_context(generate_response()), content_type='application/json')
 
 # Run the application
 if __name__ == '__main__':
