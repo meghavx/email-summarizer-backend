@@ -439,6 +439,7 @@ def store_sop_doc_to_db():
     sop_document = SOPDocument(doc_content=binary_data)
     db.session.add(sop_document)
     db.session.commit()
+    return jsonify({}), 200
 
 
 # Run the application
