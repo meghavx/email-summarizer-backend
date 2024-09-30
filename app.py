@@ -400,7 +400,7 @@ def store_email_document():
     
 
     # Fetch all valid email thread based on thread_id
-    email_thread = EmailThread.query.get(thread_id) 
+    email_thread = Email.query.get(thread_id) 
     
     if not email_thread:
         return jsonify ({'error' : "Email thread not found"}) , 404
