@@ -471,6 +471,29 @@ def get_pdf_content_by_doc_id(doc_id):
 # Adding email to database based on thread id and document id (considering primary key)
 # Response body AI Team
 
+def gen_support_email(sop_content,emails):
+    prompt = f"""
+    Based on the following Standard Operating Procedure (SOP) and the email content from the customer, generate a customer support email response.
+    SOP:
+    {sop_content}
+    Please draft a response that addresses the customer's concerns while adhering to the SOP guidelines.
+    Customer Email:
+
+    """
+    for email in emails:
+        sender = email.sender_email
+        date = email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None
+        content = email.email_content
+        email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
+        prompt += email_entry
+
+    # Ollama API call for response generation
+    response = ollama.chat(
+        model='llama3.2',
+        messages=[{'role': 'user', 'content': prompt}]
+    )
+    return response['message']['content']
+
 @app.route('/store_thread_and_document' , methods=['POST'])
 def store_email_document():
     data = request.json # Parsing incoming JSON data 
@@ -481,6 +504,8 @@ def store_email_document():
     if not thread_id or not document_id:
         return jsonify ({'error' : "Provide valid thread_id and documemnt_id"}) , 400 
     
+    emails = Email.query.filter_by(thread_id=thread_id).all()
+
     # Fetch all valid email thread based on thread_id
     email_thread = EmailThread.query.get(thread_id) 
     if not email_thread:
@@ -494,7 +519,7 @@ def store_email_document():
 
     # Prepare the final response
     # AI Response Below ...
-    (subject,content) = ("some subject we will be getting from AI team","Some content we will getting from Content")
+    (subject,content) = (email_thread.thread_topic, gen_support_email(document,emails))
 
     new_email = Email(
         sender_email= "support@abc.com",
