@@ -220,30 +220,50 @@ def get_thread_by_id(thread_id):
 def sortEmails(emailList):
     return sorted(emailList, key=lambda email: email.email_received_at)
 
-@app.post('/summarize/<int:thread_id>')
+@app.get('/summarize/<int:thread_id>')
 def summarize_thread_by_id(thread_id):
-
     thread = EmailThread.query.get(thread_id)
     if not thread:
         return jsonify({'error': 'Thread not found'}), 404
     
-    emails = [{
-        'senderEmail': email.sender_email,
-        'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
-        'content': email.email_content,
-    } for email in thread.emails]
-
+    sorted_emails = sortEmails(thread.emails)
+    # Request body to be sent along to the AI Team's
+    # `summarize email thread` endpoint call
+    request_body = {
+        'email_thread_id': thread.thread_id,
+        'email_subject': thread.thread_topic,
+        'email_messages': [
+            {
+                'sender': email.sender_name,
+                'sequence_no': index + 1,
+                'content': email.email_content
+            }
+            for index, email in enumerate(sorted_emails)
+        ]
+    }
 
     """
-    # Call API (POST) endpoint
-    response = generate_summary(request_body)
+    # Call AI Team's `summarize thread` (POST) Endpoint
+    # with request body as generated above
+    # And receive the returned summarized version as `response` 
+    response = --Call to the AI Team's Endpoint
+
+    # Construct thread summary record with given thread_id
+    # and `response` received as above as summary content
     thread_summary = ThreadSummary(
         thread_id = thread.thread_id,
         summary_content = str(response)
     )
+
+    # Store summary record to DB
     db.session.add(thread_summary)
-    db.session.commit()    
+    db.session.commit()  
+
+    # Send back an OK status  
+    return jsonify({}), 200
     """
+
+    # Temporary return statement
     return jsonify({'summary':"Here is the summary of the data...summary summary summary"})
 
 """
@@ -257,6 +277,7 @@ curl --request POST \
 	"email_content" : "I wanted to know what happend to my refund. Thanks"
 }'
 """
+
 @app.route('/create/email', methods=['POST'])
 def create_email():
     data = request.json  # Parse the incoming JSON data
