@@ -84,6 +84,20 @@ class Summary(db.Model):
 
  # 4. SBP-3 [ 26th Sept 2024 ]
 
+# SOP Document model
+class SOPDocument(db.Model):
+    __tablename__ = 'sop_document'
+    doc_id = db.Column(db.Integer, primary_key=True)
+    doc_content = db.Column(db.LargeBinary, nullable=False)
+    doc_timestamp = db.Column(db.TIMESTAMP, default=db.func.now()) 
+
+    def to_dict(self):
+        return {
+            'doc_id': self.doc_id,
+            'doc_content': self.doc_content,
+            'doc_timestamp': self.doc_timestamp
+        } 
+
 # Modified as per UI requirements
 class SentimentEnum(db.Enum):
     CRITICAL = 'Critical'
@@ -362,6 +376,22 @@ def generate_sentiment(email_thread_id):
 
     response = { 'overall_sentiment': sentiment_response }
     return jsonify(response), 200
+
+@app.post('/upload_sop_doc/')
+def store_sop_doc_to_db():
+    if "file" not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+    file = request.files["file"]
+
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+    binary_data = file.read()
+    sop_document = SOPDocument(doc_content=binary_data)
+    db.session.add(sop_document)
+    db.session.commit()
+
 
 # Run the application
 if __name__ == '__main__':
