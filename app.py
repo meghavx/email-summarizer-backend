@@ -2,12 +2,11 @@
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from sqlalchemy.orm import joinedload
-from sqlalchemy import desc
 import random
 from sqlalchemy import Enum
 import requests
-from flask import url_for
+from PyPDF2 import PdfReader
+import io
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -233,10 +232,6 @@ def summarize_thread_by_id(thread_id):
         'content': email.email_content,
     } for email in thread.emails]
 
-    request_body = {
-        'threadTitle': thread.thread_topic,
-        'emails': emails
-    }
 
     """
     # Call API (POST) endpoint
@@ -391,6 +386,25 @@ def store_sop_doc_to_db():
     sop_document = SOPDocument(doc_content=binary_data)
     db.session.add(sop_document)
     db.session.commit()
+    return jsonify({}), 200
+
+def get_pdf_content_by_doc_id(doc_id):
+    try:
+        # Query the database to get the document by doc_id
+        sop_document = SOPDocument.query.filter_by(doc_id=doc_id).one()
+
+        # Read the PDF content from the binary data
+        pdf_file = io.BytesIO(sop_document.doc_content)
+        reader = PdfReader(pdf_file)
+        
+        # Extract text from all pages
+        pdf_content = " ".join([page.extract_text() for page in reader.pages])
+        return pdf_content
+
+    except NoResultFound:
+        return jsonify({'error': 'Document not found with the provided doc_id'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 # Run the application
