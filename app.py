@@ -105,6 +105,34 @@ class EmailThreadSentiment(db.Model):
             'timestamp': self.timestamp.strftime('%B %d, %Y %I:%M %p')
         }
 
+# SOP Document model
+class SOPDocument(db.Model):
+    __tablename__ = 'sop_document'
+    doc_id = db.Column(db.Integer, primary_key=True)
+    doc_content = db.Column(db.LargeBinary, nullable=False)
+    doc_timestamp = db.Column(db.TIMESTAMP, default=db.func.now()) 
+
+    def to_dict(self):
+        return {
+            'doc_id': self.doc_id,
+            'doc_content': self.doc_content,
+            'doc_timestamp': self.doc_timestamp
+        } 
+
+# Routes
+
+@app.route('/')
+def hello():
+    return "Hello, Ruchita!"
+
+# 1. GET all emails
+@app.route('/all_emails', methods=['GET'])
+def get_all_emails():
+    emails = Email.query.all()
+    emails_list = [email.to_dict() for email in emails]
+    return jsonify(emails_list)
+
+# 2. GET all email threads with their associated emails
 @app.route('/all_email_threads', methods=['GET'])
 def get_all_threads():
     threads = EmailThread.query.order_by('thread_id').all()
@@ -396,6 +424,22 @@ def generate_customer_response():
             first_chunk = False
 
     return Response(stream_with_context(generate_response()), content_type='application/json')
+
+@app.post('/upload_sop_doc/')
+def store_sop_doc_to_db():
+    if "file" not in request.files:
+        return jsonify({'error': 'No file part'}), 400
+    
+    file = request.files["file"]
+
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+    
+    binary_data = file.read()
+    sop_document = SOPDocument(doc_content=binary_data)
+    db.session.add(sop_document)
+    db.session.commit()
+
 
 # Run the application
 if __name__ == '__main__':

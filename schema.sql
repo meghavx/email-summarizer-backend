@@ -1058,4 +1058,10 @@ ADD CONSTRAINT emails_fkey
 FOREIGN KEY (thread_id)
 REFERENCES threads (thread_id);
 
+CREATE TABLE sop_document (
+  doc_id SERIAL PRIMARY KEY,
+  doc_content BYTEA NOT NULL,
+  doc_timestamp TIMESTAMP DEFAULT NOW()
+);
+
 commit;
