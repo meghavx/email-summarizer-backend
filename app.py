@@ -1,4 +1,6 @@
-from flask import Flask, jsonify, request
+
+from datetime import datetime
+from flask import Flask, Response, jsonify, request, stream_with_context
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from sqlalchemy import Enum
@@ -125,7 +127,7 @@ class SOPDocument(db.Model):
 
 @app.route('/')
 def hello():
-    return "Hello, Ruchita!"
+    return "Hello, User!"
 
 # 1. GET all emails
 @app.route('/all_emails', methods=['GET'])
@@ -304,6 +306,8 @@ def add_email_to_thread(thread_id):
 
     return jsonify({'success': 'Email added to thread', 'email_record_id': new_email.email_record_id}), 201
 
+
+ # 4. SBP-3 [ 26th Sept 2024 ]
 @app.route('/generate_sentiment/<int:email_thread_id>', methods=['POST'])
 def generate_sentiment(email_thread_id):
     # Fetch the email thread based on email_thread_id
@@ -456,11 +460,56 @@ def get_pdf_content_by_doc_id(doc_id):
         pdf_content = " ".join([page.extract_text() for page in reader.pages])
         return pdf_content
 
-    except NoResultFound:
-        return jsonify({'error': 'Document not found with the provided doc_id'}), 404
+    # except NoResultFound:
+    #     return jsonify({'error': 'Document not found with the provided doc_id'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+# 5. SBER-2 [ 30th Sept 2024 ]
+
+# Adding email to database based on thread id and document id (considering primary key)
+# Response body AI Team
+
+@app.route('/store_thread_and_document' , methods=['POST'])
+def store_email_document():
+    data = request.json # Parsing incoming JSON data 
+    thread_id = data.get('thread_id') # Fetching thread_id in JSON
+    document_id = data.get('doc_id') # Fetching document_id in JSON
+
+    # Check for valid thread_id and document_id 
+    if not thread_id or not document_id:
+        return jsonify ({'error' : "Provide valid thread_id and documemnt_id"}) , 400 
+    
+    # Fetch all valid email thread based on thread_id
+    email_thread = EmailThread.query.get(thread_id) 
+    if not email_thread:
+        return jsonify ({'error' : "Email thread not found"}) , 404
+
+    # Fetch all documents based on doc_id
+    document = get_pdf_content_by_doc_id(document_id)
+
+    if not document:
+        return jsonify ({'error' : "Document not found"}) , 404
+
+    # Prepare the final response
+    # AI Response Below ...
+    (subject,content) = ("some subject we will be getting from AI team","Some content we will getting from Content")
+
+    new_email = Email(
+        sender_email= "support@abc.com",
+        thread_id= thread_id,
+        email_subject= subject,
+        email_content= content,
+        sender_name = "support",
+        receiver_email = 'alex@abc.com',
+        receiver_name = 'alex',
+        email_received_at=db.func.now()  # Set timestamp to now
+    )
+    db.session.add(new_email)
+    db.session.commit()
+
+    return jsonify({'success': 'Email and thread created successfully', 'thread_id': thread_id, 'email_record_id': new_email.email_record_id}), 201
 
 # Run the application
 if __name__ == '__main__':
