@@ -84,20 +84,6 @@ class Summary(db.Model):
 
  # 4. SBP-3 [ 26th Sept 2024 ]
 
-# SOP Document model
-class SOPDocument(db.Model):
-    __tablename__ = 'sop_document'
-    doc_id = db.Column(db.Integer, primary_key=True)
-    doc_content = db.Column(db.LargeBinary, nullable=False)
-    doc_timestamp = db.Column(db.TIMESTAMP, default=db.func.now()) 
-
-    def to_dict(self):
-        return {
-            'doc_id': self.doc_id,
-            'doc_content': self.doc_content,
-            'doc_timestamp': self.doc_timestamp
-        } 
-
 # Modified as per UI requirements
 class SentimentEnum(db.Enum):
     CRITICAL = 'Critical'
@@ -140,6 +126,20 @@ class EmailThreadSentiment(db.Model):
             'sentiments': self.sentiments,
             'timestamp': self.timestamp.strftime('%B %d, %Y %I:%M %p')
         }
+
+# SOP Document model
+class SOPDocument(db.Model):
+    __tablename__ = 'sop_document'
+    doc_id = db.Column(db.Integer, primary_key=True)
+    doc_content = db.Column(db.LargeBinary, nullable=False)
+    doc_timestamp = db.Column(db.TIMESTAMP, default=db.func.now()) 
+
+    def to_dict(self):
+        return {
+            'doc_id': self.doc_id,
+            'doc_content': self.doc_content,
+            'doc_timestamp': self.doc_timestamp
+        } 
 
 # Routes
 
