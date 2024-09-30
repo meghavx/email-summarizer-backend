@@ -1,4 +1,3 @@
-
 from datetime import datetime
 from flask import Flask, Response, jsonify, request, stream_with_context
 from flask_sqlalchemy import SQLAlchemy
@@ -9,21 +8,13 @@ import requests
 from PyPDF2 import PdfReader
 import io
 
-# Initialize Flask app
 app = Flask(__name__)
 
-# Configure the PostgreSQL database
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://ruchita:qwerty@localhost/poc'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# Initialize the database
 db = SQLAlchemy(app)
 CORS(app)
-# Models
-# These represent the tables identical in database
-
-
-# to_dict Method is useful for serializing the object to JSON when sending responses through API endpoints.
 
 class EmailThread(db.Model):
     __tablename__ = 'threads'
@@ -37,7 +28,7 @@ class EmailThread(db.Model):
         }
 
 class Email(db.Model):
-    __tablename__ = 'emails'
+    __tablename__   = 'emails'
     email_record_id = db.Column(db.Integer, primary_key=True)
     sender_email = db.Column(db.String(50), nullable=False)
     sender_name = db.Column(db.String(100),nullable=False)
@@ -48,7 +39,6 @@ class Email(db.Model):
     email_subject = db.Column(db.String(50), nullable=False)
     email_content = db.Column(db.Text, nullable=True)
 
-    # Relationship to EmailThread
     email_thread = db.relationship('EmailThread', backref=db.backref('emails', lazy=True))
 
     def to_dict(self):
@@ -220,7 +210,7 @@ def get_thread_by_id(thread_id):
 def sortEmails(emailList):
     return sorted(emailList, key=lambda email: email.email_received_at)
 
-@app.get('/summarize/<int:thread_id>')
+@app.post('/summarize/<int:thread_id>')
 def summarize_thread_by_id(thread_id):
     thread = EmailThread.query.get(thread_id)
     if not thread:
