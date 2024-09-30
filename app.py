@@ -5,6 +5,8 @@ from sqlalchemy import Enum
 import ollama
 from flask import Response, stream_with_context
 import PyPDF2
+from PyPDF2 import PdfReader
+import io
 
 app = Flask(__name__)
 
@@ -440,6 +442,24 @@ def store_sop_doc_to_db():
     db.session.add(sop_document)
     db.session.commit()
     return jsonify({}), 200
+
+def get_pdf_content_by_doc_id(doc_id):
+    try:
+        # Query the database to get the document by doc_id
+        sop_document = SOPDocument.query.filter_by(doc_id=doc_id).one()
+
+        # Read the PDF content from the binary data
+        pdf_file = io.BytesIO(sop_document.doc_content)
+        reader = PdfReader(pdf_file)
+        
+        # Extract text from all pages
+        pdf_content = " ".join([page.extract_text() for page in reader.pages])
+        return pdf_content
+
+    except NoResultFound:
+        return jsonify({'error': 'Document not found with the provided doc_id'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 # Run the application
