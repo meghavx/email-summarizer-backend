@@ -9,6 +9,7 @@ from flask import Response, stream_with_context
 import PyPDF2
 from PyPDF2 import PdfReader
 import io
+from threading import Thread
 
 app = Flask(__name__)
 
@@ -471,7 +472,7 @@ def get_pdf_content_by_doc_id(doc_id):
 # Adding email to database based on thread id and document id (considering primary key)
 # Response body AI Team
 
-def gen_support_email(sop_content,emails):
+def gen_support_email(sop_content, emails):
     prompt = f"""
     Based on the following Standard Operating Procedure (SOP) and the email content from the customer, generate a customer support email response.
     SOP:
@@ -481,6 +482,76 @@ def gen_support_email(sop_content,emails):
 
     """
     for email in emails:
+        sender = email.sender_email
+        date = email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None
+        content = email.email_content
+        email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
+        prompt += email_entry
+
+    # Ollama API call for response generation
+    response = ollama.chat(
+        model='llama3.2',
+        messages=[{'role': 'user', 'content': prompt}]
+    )
+    return response['message']['content']
+
+def background_task(thread_id, document_id):
+    with app.app_context():
+        emails = Email.query.filter_by(thread_id=thread_id).all()
+        email_thread = EmailThread.query.get(thread_id)
+
+        if not email_thread:
+            print("Email thread not found")
+            return
+
+        document = get_pdf_content_by_doc_id(document_id)
+        if not document:
+            print("Document not found")
+            return
+
+        subject = email_thread.thread_topic
+        content = gen_support_email(document, emails)
+
+        new_email = Email(
+            sender_email="support@abc.com",
+            thread_id=thread_id,
+            email_subject=subject,
+            email_content=content,
+            sender_name="support",
+            receiver_email='alex@abc.com',
+            receiver_name='alex',
+            email_received_at=db.func.now()  # Set timestamp to now
+        )
+        db.session.add(new_email)
+        db.session.commit()
+
+@app.route('/store_thread_and_document', methods=['POST'])
+def store_email_document():
+    data = request.json  # Parsing incoming JSON data
+    thread_id = data.get('thread_id')  # Fetching thread_id in JSON
+    document_id = data.get('doc_id')  # Fetching document_id in JSON
+
+    # Check for valid thread_id and document_id
+    if not thread_id or not document_id:
+        return jsonify({'error': "Provide valid thread_id and document_id"}), 400
+
+    # Start the background task
+    Thread(target=background_task, args=(thread_id, document_id)).start()
+
+    # Immediately respond with a 200 status
+    return jsonify({'success': 'Processing started in background', 'thread_id': thread_id}), 200
+
+"""
+def gen_support_email(sop_content,emails):
+    #   prompt = f"""
+  #  Based on the following Standard Operating Procedure (SOP) and the email content from the customer, generate a customer support email response.
+   # SOP:
+   # {sop_content}
+   # Please draft a response that addresses the customer's concerns while adhering to the SOP guidelines.
+   # Customer Email:
+
+"""
+   for email in emails:
         sender = email.sender_email
         date = email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None
         content = email.email_content
@@ -535,6 +606,7 @@ def store_email_document():
     db.session.commit()
 
     return jsonify({'success': 'Email and thread created successfully', 'thread_id': thread_id, 'email_record_id': new_email.email_record_id}), 201
+"""
 
 # Run the application
 if __name__ == '__main__':
