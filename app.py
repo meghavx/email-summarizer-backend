@@ -31,7 +31,9 @@ class EmailThread(db.Model):
     def to_dict(self):
         return {
             'thread_id': self.thread_id,
-            'thread_topic': self.thread_topic
+            'thread_topic': self.thread_topic,
+            'created_at': self.created_at,
+            'updated_at': self.updated_at
         }
 
 class Email(db.Model):
@@ -158,23 +160,15 @@ def get_all_emails():
 def get_all_threads():
     threads = EmailThread.query.order_by('thread_id').all()
     thread_list = []
+    sentiments = ['neutral','positive','needs_attention','critical'] # temp
     for thread in threads:
-        sentiment_record = EmailThreadSentiment.query.filter_by(thread_id=thread.thread_id).first()
-        
-        sentiment_ = sentiment_record.sentiments if sentiment_record else 'Positive'
-        sentiment = ""
-        if (sentiment_ == 'Positive'):
-            sentiment = "postive"
-        elif (sentiment_ == 'Neutral'):
-            sentiment = 'neutral'
-        elif (sentiment_ == 'Needs attention'):
-            sentiment = 'needs_attention'
-        elif (sentiment_ == 'Critical'):
-            sentiment = 'critical'
-        else:
-            print ("something went wrong")
-            sentiment = 'positive'
-
+        try:
+            sentiment_response = requests.post(f'http://localhost:5000/generate_sentiment/{thread.thread_id}')
+            sentiment_data = sentiment_response.json()
+            sentiment = sentiment_data.get('overall_sentiment', 'neutral')  # Default to 'neutral' if missing
+        except Exception as e:
+            print(f"Error in fetching sentiment for thread {thread.thread_id}: {e}")
+            sentiment = 'neutral'  # Fallback sentiment if the request fails
         sorted_emails = sorted(
             thread.emails, 
             key=lambda email: email.email_received_at or db.func.now(),
@@ -190,6 +184,7 @@ def get_all_threads():
             'receiver': email.receiver_name,
             'receiverEmail': email.receiver_email,
             'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
+            'timestamp': email.email_received_at,
             'content': email.email_content,
             'isOpen': False  # Assuming 'isOpen' is false for simplicity
         } for i,email in  enumerate(sorted_emails)]
@@ -198,10 +193,18 @@ def get_all_threads():
             'threadId' : thread.thread_id,
             'threadTitle': thread.thread_topic,
             'emails': emails,
-            'sentiment': sentiment
+            'sentiment': sentiment, # sentiments[random.randint(0,len(sentiments)-1)] # Here sentiments which would be generated shall be fetched.
+            'updated_at': thread.updated_at
         })
 
-    return jsonify({ "threads": thread_list,"time": datetime.now(timezone.utc).strftime("%d-%m-%y_%H:%M:%S")})
+        sorted_thread_list = sorted(
+            thread_list, 
+            key=lambda thread: thread['emails'][0]['timestamp'],
+            # key=lambda thread: thread['updated_at'],
+            reverse=True
+        )
+
+    return jsonify({ "threads": sorted_thread_list,"time": datetime.now(timezone.utc).strftime("%d-%m-%y_%H:%M:%S")})
 
 # 3. GET specific email thread by thread_id with its emails
 @app.route('/all_email_by_thread_id/<int:thread_id>', methods=['GET'])
@@ -223,7 +226,8 @@ def get_thread_by_id(thread_id):
 
     thread_data = {
         'threadTitle': thread.thread_topic,
-        'emails': emails
+        'emails': emails,
+        'updated_at': thread.updated_at
     }
     return jsonify(thread_data)
 
