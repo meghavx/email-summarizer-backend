@@ -1,13 +1,13 @@
 from datetime import datetime,timezone 
-from flask import Flask, Response, jsonify, request, stream_with_context
+from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import random
 from sqlalchemy import Enum
-import requests
 from PyPDF2 import PdfReader
 import io
 from sop_based_email_ai import get_answer_from_email
+from threading import Thread
 
 app = Flask(__name__)
 
@@ -461,6 +461,41 @@ def get_pdf_content_by_doc_id(doc_id):
 # Adding email to database based on thread id and document id (considering primary key)
 # Response body AI Team
 
+def store_email_document_(thread_id, doc_id):
+    with app.app_context():
+      # Fetch all valid email thread based on thread_id
+      email_thread = EmailThread.query.get(thread_id) 
+      if not email_thread:
+          return jsonify ({'error' : "Email thread not found"}) , 404
+  
+      document = get_pdf_content_by_doc_id(doc_id)
+  
+      if not document:
+          return jsonify ({'error' : "Document not found"}) , 404
+      
+      sorted_emails = sorted(
+          email_thread.emails, 
+          key=lambda email: email.email_received_at or db.func.now(),
+          reverse=True
+      )
+      latest_email = sorted_emails[0]
+      # AI Team's response to the latest email in this thread
+      content = get_answer_from_email(email_thread.thread_topic,latest_email.email_content,latest_email.sender_name,document)
+      customerName = customerEmail = getCustomerNameAndEmail(email_thread.emails)
+      new_email = Email(
+          sender_email= BUSINESS_SIDE_EMAIL,
+          thread_id= thread_id,
+          email_subject= email_thread.thread_topic,
+          email_content= content,
+          sender_name = BUSINESS_SIDE_NAME,
+          receiver_email = customerName,
+          receiver_name = customerEmail,
+          email_received_at=db.func.now()  # Set timestamp to now
+      )
+      db.session.add(new_email)
+      db.session.commit()
+
+
 @app.route('/store_thread_and_document' , methods=['POST'])
 def store_email_document():
     data = request.json # Parsing incoming JSON data 
@@ -471,39 +506,10 @@ def store_email_document():
     if not thread_id or not document_id:
         return jsonify ({'error' : "Provide valid thread_id and documemnt_id"}) , 400 
     
-    # Fetch all valid email thread based on thread_id
-    email_thread = EmailThread.query.get(thread_id) 
-    if not email_thread:
-        return jsonify ({'error' : "Email thread not found"}) , 404
+    Thread(target=store_email_document_, args=(thread_id, document_id)).start()
 
-    document = get_pdf_content_by_doc_id(document_id)
-
-    if not document:
-        return jsonify ({'error' : "Document not found"}) , 404
-    
-    sorted_emails = sorted(
-        email_thread.emails, 
-        key=lambda email: email.email_received_at or db.func.now(),
-        reverse=True
-    )
-    latest_email = sorted_emails[0]
-    # AI Team's response to the latest email in this thread
-    content = get_answer_from_email(email_thread.thread_topic,latest_email.email_content,latest_email.sender_name,document)
-    customerName = customerEmail = getCustomerNameAndEmail(email_thread.emails)
-    new_email = Email(
-        sender_email= BUSINESS_SIDE_EMAIL,
-        thread_id= thread_id,
-        email_subject= email_thread.thread_topic,
-        email_content= content,
-        sender_name = BUSINESS_SIDE_NAME,
-        receiver_email = customerName,
-        receiver_name = customerEmail,
-        email_received_at=db.func.now()  # Set timestamp to now
-    )
-    db.session.add(new_email)
-    db.session.commit()
-
-    return jsonify({'success': 'Email and thread created successfully', 'thread_id': thread_id, 'email_record_id': new_email.email_record_id}), 201
+    # Immediately respond with a 200 status
+    return jsonify({'success': 'Processing started in background', 'thread_id': thread_id}), 200
 
 @app.route("/check_new_emails/<last_updated_timestamp>", methods=["GET"])
 def check_new_emails(last_updated_timestamp):
