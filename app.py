@@ -192,6 +192,7 @@ def get_all_threads():
             'receiver': email.receiver_name,
             'receiverEmail': email.receiver_email,
             'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
+            'timestamp': email.email_received_at,
             'content': email.email_content,
             'isOpen': False  # Assuming 'isOpen' is false for simplicity
         } for i,email in  enumerate(sorted_emails)]
@@ -204,7 +205,14 @@ def get_all_threads():
             'updated_at': thread.updated_at
         })
 
-    return jsonify({ "threads": thread_list,"time": datetime.now(timezone.utc).strftime("%d-%m-%y_%H:%M:%S")})
+        sorted_thread_list = sorted(
+            thread_list, 
+            key=lambda thread: thread['emails'][0]['timestamp'],
+            # key=lambda thread: thread['updated_at'],
+            reverse=True
+        )
+
+    return jsonify({ "threads": sorted_thread_list,"time": datetime.now(timezone.utc).strftime("%d-%m-%y_%H:%M:%S")})
 
 # 3. GET specific email thread by thread_id with its emails
 @app.route('/all_email_by_thread_id/<int:thread_id>', methods=['GET'])
