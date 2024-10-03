@@ -18,6 +18,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 CORS(app)
 
+# GLOBAL VARIABLES
+BUSINESS_SIDE_NAME = "Support Team"
+BUSINESS_SIDE_EMAIL = "support@business.com"
+
 class EmailThread(db.Model):
     __tablename__ = 'threads'
     thread_id = db.Column(db.Integer, primary_key=True)
@@ -49,6 +53,9 @@ class Email(db.Model):
         return {
             'email_record_id': self.email_record_id,
             'sender_email': self.sender_email,
+            'sender_name': self.sender_name,
+            'receiver_email': self.receiver_email,
+            'receiver_name': self.receiver_name,
             'thread_id': self.thread_id,
             'email_received_at': self.email_received_at.strftime('%B %d, %Y %I:%M %p') if self.email_received_at else None,
             'email_subject': self.email_subject,
@@ -171,8 +178,10 @@ def get_all_threads():
 
         emails = [{
             'seq_no': i,
-            'sender': email.sender_email.split('@')[0],  # Extracting name from email
+            'sender': email.sender_name,
             'senderEmail': email.sender_email,
+            'receiver': email.receiver_name,
+            'receiverEmail': email.receiver_email,
             'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
             'content': email.email_content,
             'isOpen': False  # Assuming 'isOpen' is false for simplicity
@@ -185,7 +194,7 @@ def get_all_threads():
             'sentiment': sentiment  
         })
 
-    return jsonify({ "threads": thread_list,"time": datetime.now(timezone.utc).strftime("%d-%m-%y_%H:%M")})
+    return jsonify({ "threads": thread_list,"time": datetime.now(timezone.utc).strftime("%d-%m-%y_%H:%M:%S")})
 
 @app.route('/all_email_by_thread_id/<int:thread_id>', methods=['GET'])
 def get_thread_by_id(thread_id):
@@ -195,8 +204,10 @@ def get_thread_by_id(thread_id):
         return jsonify({'error': 'Thread not found'}), 404
 
     emails = [{
-        'sender': email.sender_email.split('@')[0],  # Extracting name from email
+        'sender': email.sender_name,
         'senderEmail': email.sender_email,
+        'receiver': email.receiver_name,
+        'receiverEmail': email.receiver_email,
         'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
         'content': email.email_content,
         'isOpen': False  # Assuming 'isOpen' is false for simplicity
@@ -206,7 +217,6 @@ def get_thread_by_id(thread_id):
         'threadTitle': thread.thread_topic,
         'emails': emails
     }
-
     return jsonify(thread_data)
 
 def sortEmails(emailList):
@@ -218,40 +228,57 @@ def summarize_thread_by_id(thread_id):
     if not thread:
         return jsonify({'error': 'Thread not found'}), 404
     
-    emails = [{
-        'senderEmail': email.sender_email,
-        'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
-        'content': email.email_content,
-    } for email in thread.emails]
-  
-    prompt = f"""Please quickly summarize the following email thread titled '{thread.thread_topic}' in 2-3 points. 
-                Include the main points, important decisions, and highlight any significant dates. Here is the list of emails in the thread:\n\n"""
+    sorted_emails = sortEmails(thread.emails)
+    # Request body to be sent along to the AI Team's
+    # `summarize email thread` endpoint call
+    request_body = {
+        'email_thread_id': thread.thread_id,
+        'email_subject': thread.thread_topic,
+        'email_messages': [
+            {
+                'sender': email.sender_name,
+                'sequence_no': index + 1,
+                'content': email.email_content
+            }
+            for index, email in enumerate(sorted_emails)
+        ]
+    }
 
-    for email in emails:
-        sender = email['senderEmail']
-        date = email['date']
-        content = email['content']
-    
-        email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
-        prompt += email_entry
+    """
+    # Call AI Team's `summarize thread` (POST) Endpoint
+    # with request body as generated above
+    # And receive the returned summarized version as `response` 
+    response = --Call to the AI Team's Endpoint
 
-    # Ollama code
-    stream = ollama.chat(
-    model='llama3.2',
-    messages=[{'role': 'user', 'content': prompt}],
-    stream=True,)
+    # Construct thread summary record with given thread_id
+    # and `response` received as above as summary content
+    thread_summary = ThreadSummary(
+        thread_id = thread.thread_id,
+        summary_content = str(response)
+    )
 
-    def generate_summary():
-        first_chunk = True
-        for chunk in stream:
-            # Ensure proper JSON formatting for streaming chunks
-            if not first_chunk:
-                yield ' '
-            yield chunk['message']['content']
-            first_chunk = False
+    # Store summary record to DB
+    db.session.add(thread_summary)
+    db.session.commit()  
 
-    # Return a streaming response using Flask's Response object
-    return Response(stream_with_context(generate_summary()), content_type='application/json')
+    # Send back an OK status  
+    return jsonify({}), 200
+    """
+
+    # Temporary return statement
+    return jsonify({'summary':"Here is the summary of the data...summary summary summary"})
+
+"""
+curl --request POST \
+  --url http://localhost:5000/create/email \
+  --header 'Content-Type: application/json' \
+  --header 'User-Agent: insomnia/10.0.0' \
+  --data '{
+	"sender_email": "tushar@abc.com",
+	"email_subject": "Enquiry about refund",
+	"email_content" : "I wanted to know what happend to my refund. Thanks"
+}'
+"""
 
 @app.route('/create/email', methods=['POST'])
 def create_email():
@@ -267,13 +294,13 @@ def create_email():
     db.session.flush()  # This will generate an ID for the new thread before committing
 
     new_email = Email(
-        sender_email= data['senderEmail'],
+        sender_email= BUSINESS_SIDE_EMAIL,
+        sender_name=BUSINESS_SIDE_NAME,
         thread_id= new_thread.thread_id,
         email_subject= data['subject'],
         email_content= data['content'],
-        sender_name = data['senderEmail'].split('@')[0],
-        receiver_email = 'alex@abc.com',
-        receiver_name = 'alex',
+        receiver_email = data['senderEmail'],
+        receiver_name = " ".join(list(map(str.capitalize, data['senderEmail'].split('@')[0].split('.')))),
         email_received_at=db.func.now()  # Set timestamp to now
     )
     db.session.add(new_email)
@@ -281,6 +308,18 @@ def create_email():
 
     return jsonify({'success': 'Email and thread created successfully', 'thread_id': new_thread.thread_id, 'email_record_id': new_email.email_record_id}), 201
 
+""""
+curl --request POST \
+  --url http://localhost:5000/create/email/2 \
+  --header 'Content-Type: application/json' \
+  --data '{
+	"sender_email" : "nehal@abc.com", 
+	"email_subject": "refund",
+	"email_content": "asdasdasdas "
+}'
+"""
+
+# Reply to an existing email thread
 @app.route('/create/email/<int:thread_id>', methods=['POST'])
 def add_email_to_thread(thread_id):
     data = request.json  # Parse the incoming JSON data
@@ -294,15 +333,24 @@ def add_email_to_thread(thread_id):
     if not thread:
         return jsonify({'error': 'Thread not found'}), 404
 
+    customerName = "Customer"
+    customerEmail = "customer@xyz.com"
+    for email in thread.emails:
+        # If email receiver is not the business itself then it should be the customer
+        if not BUSINESS_SIDE_EMAIL in email.receiver_email.lower():
+            customerName = email.receiver_name
+            customerEmail = email.receiver_email
+            break
+
     # Create a new Email instance
     new_email = Email(
         sender_email= data['senderEmail'],
         thread_id= thread_id,
         email_subject= data['subject'],
         email_content= data['content'],
-        sender_name = data['senderEmail'].split('@')[0],
-        receiver_email = 'alex@abc.com',
-        receiver_name = 'alex',
+        sender_name = BUSINESS_SIDE_NAME, # data['senderEmail'].split('@')[0],
+        receiver_email = customerEmail,
+        receiver_name = customerName,
         email_received_at=db.func.now()  # Set timestamp to now
     )
     db.session.add(new_email)
@@ -547,7 +595,7 @@ def store_email_document():
 
 @app.route("/check_new_emails/<last_updated_timestamp>", methods=["GET"])
 def check_new_emails(last_updated_timestamp):
-    dt = datetime.strptime(last_updated_timestamp, "%d-%m-%y_%H:%M")
+    dt = datetime.strptime(last_updated_timestamp, "%d-%m-%y_%H:%M:%S")
     threads = EmailThread.query.all()
     for thread in threads:
         if thread.updated_at > dt:
