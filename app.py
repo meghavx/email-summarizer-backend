@@ -158,15 +158,23 @@ def get_all_emails():
 def get_all_threads():
     threads = EmailThread.query.order_by('thread_id').all()
     thread_list = []
-    sentiments = ['neutral','positive','needs_attention','critical'] # temp
     for thread in threads:
-        try:
-            sentiment_response = requests.post(f'http://localhost:5000/generate_sentiment/{thread.thread_id}')
-            sentiment_data = sentiment_response.json()
-            sentiment = sentiment_data.get('overall_sentiment', 'neutral')  # Default to 'neutral' if missing
-        except Exception as e:
-            print(f"Error in fetching sentiment for thread {thread.thread_id}: {e}")
-            sentiment = 'neutral'  # Fallback sentiment if the request fails
+        sentiment_record = EmailThreadSentiment.query.filter_by(thread_id=thread.thread_id).first()
+        
+        sentiment_ = sentiment_record.sentiments if sentiment_record else 'Positive'
+        sentiment = ""
+        if (sentiment_ == 'Positive'):
+            sentiment = "postive"
+        elif (sentiment_ == 'Neutral'):
+            sentiment = 'neutral'
+        elif (sentiment_ == 'Needs attention'):
+            sentiment = 'needs_attention'
+        elif (sentiment_ == 'Critical'):
+            sentiment = 'critical'
+        else:
+            print ("something went wrong")
+            sentiment = 'positive'
+
         sorted_emails = sorted(
             thread.emails, 
             key=lambda email: email.email_received_at or db.func.now(),
@@ -190,7 +198,7 @@ def get_all_threads():
             'threadId' : thread.thread_id,
             'threadTitle': thread.thread_topic,
             'emails': emails,
-            'sentiment': sentiment # sentiments[random.randint(0,len(sentiments)-1)] # Here sentiments which would be generated shall be fetched.
+            'sentiment': sentiment
         })
 
     return jsonify({ "threads": thread_list,"time": datetime.now(timezone.utc).strftime("%d-%m-%y_%H:%M:%S")})
