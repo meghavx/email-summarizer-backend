@@ -1,1 +1,3 @@
 flask_env/
+.env
+__pycache__/sop_based_email_ai.cpython-310.pyc

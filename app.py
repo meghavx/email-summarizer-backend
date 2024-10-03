@@ -7,6 +7,7 @@ from sqlalchemy import Enum
 import requests
 from PyPDF2 import PdfReader
 import io
+from sop_based_email_ai import get_answer_from_email
 
 app = Flask(__name__)
 
@@ -431,6 +432,9 @@ def get_pdf_content_by_doc_id(doc_id):
         # Query the database to get the document by doc_id
         sop_document = SOPDocument.query.filter_by(doc_id=doc_id).one()
 
+        if sop_document == None:
+            return ""
+
         # Read the PDF content from the binary data
         pdf_file = io.BytesIO(sop_document.doc_content)
         reader = PdfReader(pdf_file)
@@ -465,20 +469,22 @@ def store_email_document():
     if not email_thread:
         return jsonify ({'error' : "Email thread not found"}) , 404
 
-    # Fetch all documents based on doc_id
     document = get_pdf_content_by_doc_id(document_id)
 
     if not document:
         return jsonify ({'error' : "Document not found"}) , 404
-
-    # Prepare the final response
-    # AI Response Below ...
-    (subject,content) = ("some subject we will be getting from AI team","Some content we will getting from Content")
-
+    
+    sorted_emails = sorted(
+            email_thread.emails, 
+            key=lambda email: email.email_received_at or db.func.now(),
+            reverse=True
+        )
+    latest_email = sorted_emails[0]
+    content = get_answer_from_email(email_thread.thread_topic,latest_email.email_content,latest_email.sender_name,document)
     new_email = Email(
         sender_email= "support@abc.com",
         thread_id= thread_id,
-        email_subject= subject,
+        email_subject= "Email response from AI",
         email_content= content,
         sender_name = "support",
         receiver_email = 'alex@abc.com',
