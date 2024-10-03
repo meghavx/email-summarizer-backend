@@ -14,7 +14,9 @@ CREATE TABLE emails (
 
 CREATE TABLE threads (
   thread_id serial PRIMARY KEY,
-  thread_topic VARCHAR(50)
+  thread_topic VARCHAR(50),
+  created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now()
 );
 
 CREATE TABLE summaries (
@@ -1063,5 +1065,21 @@ CREATE TABLE sop_document (
   doc_content BYTEA NOT NULL,
   doc_timestamp TIMESTAMP DEFAULT NOW()
 );
+
+CREATE OR REPLACE FUNCTION update_thread_timestamp()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Update the updated_at field in the corresponding thread
+    UPDATE threads
+    SET updated_at = NOW()
+    WHERE thread_id = NEW.thread_id;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_thread_timestamp_trigger
+AFTER INSERT OR UPDATE ON emails
+FOR EACH ROW
+EXECUTE FUNCTION update_thread_timestamp();
 
 commit;

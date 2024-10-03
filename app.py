@@ -1,5 +1,4 @@
-
-from datetime import datetime
+from datetime import datetime,timezone 
 from flask import Flask, Response, jsonify, request, stream_with_context
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
@@ -15,12 +14,16 @@ app = Flask(__name__)
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://ruchita:qwerty@localhost/poc'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 db = SQLAlchemy(app)
 CORS(app)
+
 class EmailThread(db.Model):
     __tablename__ = 'threads'
     thread_id = db.Column(db.Integer, primary_key=True)
     thread_topic = db.Column(db.String(50), nullable=False)
+    created_at = db.Column(db.TIMESTAMP, default=db.func.now())  # Default to current timestamp
+    updated_at = db.Column(db.TIMESTAMP, default=db.func.now(), onupdate=db.func.now())  # Auto-update on modification
 
     def to_dict(self):
         return {
@@ -29,7 +32,7 @@ class EmailThread(db.Model):
         }
 
 class Email(db.Model):
-    __tablename__ = 'emails'
+    __tablename__   = 'emails'
     email_record_id = db.Column(db.Integer, primary_key=True)
     sender_email = db.Column(db.String(50), nullable=False)
     sender_name = db.Column(db.String(100),nullable=False)
@@ -39,6 +42,7 @@ class Email(db.Model):
     email_received_at = db.Column(db.TIMESTAMP, nullable=True)
     email_subject = db.Column(db.String(50), nullable=False)
     email_content = db.Column(db.Text, nullable=True)
+
     email_thread = db.relationship('EmailThread', backref=db.backref('emails', lazy=True))
 
     def to_dict(self):
@@ -146,7 +150,7 @@ def get_all_threads():
     for thread in threads:
         sorted_emails = sorted(
             thread.emails, 
-            key=lambda email: email.email_received_at or db.func.now(), 
+            key=lambda email: email.email_received_at or db.func.now(),
             reverse=True
         )
         sentiment_record = EmailThreadSentiment.query.filter_by(thread_id=thread.thread_id).first()
@@ -181,7 +185,7 @@ def get_all_threads():
             'sentiment': sentiment  
         })
 
-    return jsonify(thread_list)
+    return jsonify({ "threads": thread_list,"time": datetime.now(timezone.utc).strftime("%d-%m-%y_%H:%M")})
 
 @app.route('/all_email_by_thread_id/<int:thread_id>', methods=['GET'])
 def get_thread_by_id(thread_id):
@@ -210,7 +214,6 @@ def sortEmails(emailList):
 
 @app.post('/summarize/<int:thread_id>')
 def summarize_thread_by_id(thread_id):
-
     thread = EmailThread.query.get(thread_id)
     if not thread:
         return jsonify({'error': 'Thread not found'}), 404
@@ -607,6 +610,15 @@ def store_email_document():
 
     return jsonify({'success': 'Email and thread created successfully', 'thread_id': thread_id, 'email_record_id': new_email.email_record_id}), 201
 """
+
+@app.route("/check_new_emails/<last_updated_timestamp>", methods=["GET"])
+def check_new_emails(last_updated_timestamp):
+    dt = datetime.strptime(last_updated_timestamp, "%d-%m-%y_%H:%M")
+    threads = EmailThread.query.all()
+    for thread in threads:
+        if (thread.updated_at > dt):
+            return get_all_threads()
+    return jsonify([])
 
 # Run the application
 if __name__ == '__main__':
