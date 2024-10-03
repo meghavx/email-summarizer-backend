@@ -31,7 +31,9 @@ class EmailThread(db.Model):
     def to_dict(self):
         return {
             'thread_id': self.thread_id,
-            'thread_topic': self.thread_topic
+            'thread_topic': self.thread_topic,
+            'updated_at': self.updated_at,
+            'created_at': self.created_at
         }
 
 class Email(db.Model):
@@ -198,7 +200,8 @@ def get_all_threads():
             'threadId' : thread.thread_id,
             'threadTitle': thread.thread_topic,
             'emails': emails,
-            'sentiment': sentiment
+            'sentiment': sentiment,
+            'updated_at': thread.updated_at
         })
 
     return jsonify({ "threads": thread_list,"time": datetime.now(timezone.utc).strftime("%d-%m-%y_%H:%M:%S")})
@@ -223,7 +226,8 @@ def get_thread_by_id(thread_id):
 
     thread_data = {
         'threadTitle': thread.thread_topic,
-        'emails': emails
+        'emails': emails,
+        'updated_at': thread.updated_at
     }
     return jsonify(thread_data)
 
