@@ -142,7 +142,6 @@ class SOPDocument(db.Model):
         } 
 
 # Routes
-
 @app.route('/')
 def hello():
     return "Hello, User!"
@@ -335,22 +334,14 @@ def add_email_to_thread(thread_id):
     if not thread:
         return jsonify({'error': 'Thread not found'}), 404
 
-    customerName = "Customer"
-    customerEmail = "customer@xyz.com"
-    for email in thread.emails:
-        # If email receiver is not the business itself then it should be the customer
-        if not BUSINESS_SIDE_EMAIL in email.receiver_email.lower():
-            customerName = email.receiver_name
-            customerEmail = email.receiver_email
-            break
-
+    customerName, customerEmail = getCustomerNameAndEmail(thread.emails)
     # Create a new Email instance
     new_email = Email(
         sender_email= data['senderEmail'],
         thread_id= thread_id,
         email_subject= data['subject'],
         email_content= data['content'],
-        sender_name = BUSINESS_SIDE_NAME, # data['senderEmail'].split('@')[0],
+        sender_name = BUSINESS_SIDE_NAME,
         receiver_email = customerEmail,
         receiver_name = customerName,
         email_received_at=db.func.now()  # Set timestamp to now
@@ -360,6 +351,14 @@ def add_email_to_thread(thread_id):
 
     return jsonify({'success': 'Email added to thread', 'email_record_id': new_email.email_record_id}), 201
 
+# Helper funtion to extract customer name and email from a list of emails
+def getCustomerNameAndEmail(emails):
+    customerName = customerEmail = None
+    for email in emails:
+        # If email receiver is not the business itself then it must be the customer
+        if not BUSINESS_SIDE_EMAIL in email.receiver_email.lower():
+            return email.receiver_name, email.receiver_email
+    return None
 
  # 4. SBP-3 [ 26th Sept 2024 ]
 @app.route('/generate_sentiment/<int:email_thread_id>', methods=['POST'])
@@ -475,20 +474,22 @@ def store_email_document():
         return jsonify ({'error' : "Document not found"}) , 404
     
     sorted_emails = sorted(
-            email_thread.emails, 
-            key=lambda email: email.email_received_at or db.func.now(),
-            reverse=True
-        )
+        email_thread.emails, 
+        key=lambda email: email.email_received_at or db.func.now(),
+        reverse=True
+    )
     latest_email = sorted_emails[0]
+    # AI Team's response to the latest email in this thread
     content = get_answer_from_email(email_thread.thread_topic,latest_email.email_content,latest_email.sender_name,document)
+    customerName = customerEmail = getCustomerNameAndEmail(email_thread.emails)
     new_email = Email(
-        sender_email= "support@abc.com",
+        sender_email= BUSINESS_SIDE_EMAIL,
         thread_id= thread_id,
-        email_subject= "Email response from AI",
+        email_subject= email_thread.thread_topic,
         email_content= content,
-        sender_name = "support",
-        receiver_email = 'alex@abc.com',
-        receiver_name = 'alex',
+        sender_name = BUSINESS_SIDE_NAME,
+        receiver_email = customerName,
+        receiver_name = customerEmail,
         email_received_at=db.func.now()  # Set timestamp to now
     )
     db.session.add(new_email)
