@@ -478,6 +478,7 @@ def get_pdf_content_by_doc_id(doc_id):
 def gen_support_email(sop_content, emails):
     prompt = f"""
     Based on the following Standard Operating Procedure (SOP) and the email content from the customer, generate a customer support email response.
+    Make sure to only generate the email content and nothing else.
     SOP:
     {sop_content}
     Please draft a response that addresses the customer's concerns while adhering to the SOP guidelines.
@@ -549,7 +550,8 @@ def check_new_emails(last_updated_timestamp):
     dt = datetime.strptime(last_updated_timestamp, "%d-%m-%y_%H:%M")
     threads = EmailThread.query.all()
     for thread in threads:
-        if (thread.updated_at > dt):
+        if thread.updated_at > dt:
+            print ("condition passed",thread.updated_at,dt)
             return get_all_threads()
     return jsonify([])
 
