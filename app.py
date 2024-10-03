@@ -16,6 +16,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 CORS(app)
 
+# GLOBAL VARIABLES
+BUSINESS_SIDE_NAME = "Support Team"
+BUSINESS_SIDE_EMAIL = "support@business.com"
+
 class EmailThread(db.Model):
     __tablename__ = 'threads'
     thread_id = db.Column(db.Integer, primary_key=True)
@@ -173,6 +177,8 @@ def get_all_threads():
             'seq_no': i,
             'sender': email.sender_name,
             'senderEmail': email.sender_email,
+            'receiver': email.receiver_name,
+            'receiverEmail': email.receiver_email,
             'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
             'content': email.email_content,
             'isOpen': False  # Assuming 'isOpen' is false for simplicity
@@ -198,6 +204,8 @@ def get_thread_by_id(thread_id):
     emails = [{
         'sender': email.sender_name,
         'senderEmail': email.sender_email,
+        'receiver': email.receiver_name,
+        'receiverEmail': email.receiver_email,
         'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
         'content': email.email_content,
         'isOpen': False  # Assuming 'isOpen' is false for simplicity
@@ -207,7 +215,6 @@ def get_thread_by_id(thread_id):
         'threadTitle': thread.thread_topic,
         'emails': emails
     }
-
     return jsonify(thread_data)
 
 def sortEmails(emailList):
@@ -271,6 +278,7 @@ curl --request POST \
 }'
 """
 
+# Compose a new email
 @app.route('/create/email', methods=['POST'])
 def create_email():
     data = request.json  # Parse the incoming JSON data
@@ -285,13 +293,13 @@ def create_email():
     db.session.flush()  # This will generate an ID for the new thread before committing
 
     new_email = Email(
-        sender_email= data['senderEmail'],
+        sender_email= BUSINESS_SIDE_EMAIL,
+        sender_name=BUSINESS_SIDE_NAME,
         thread_id= new_thread.thread_id,
         email_subject= data['subject'],
         email_content= data['content'],
-        sender_name = data['senderEmail'].split('@')[0],
-        receiver_email = 'alex@abc.com',
-        receiver_name = 'alex',
+        receiver_email = data['senderEmail'],
+        receiver_name = " ".join(list(map(str.capitalize, data['senderEmail'].split('@')[0].split('.')))),
         email_received_at=db.func.now()  # Set timestamp to now
     )
     db.session.add(new_email)
@@ -309,6 +317,8 @@ curl --request POST \
 	"email_content": "asdasdasdas "
 }'
 """
+
+# Reply to an existing email thread
 @app.route('/create/email/<int:thread_id>', methods=['POST'])
 def add_email_to_thread(thread_id):
     data = request.json  # Parse the incoming JSON data
@@ -322,15 +332,24 @@ def add_email_to_thread(thread_id):
     if not thread:
         return jsonify({'error': 'Thread not found'}), 404
 
+    customerName = "Customer"
+    customerEmail = "customer@xyz.com"
+    for email in thread.emails:
+        # If email receiver is not the business itself then it should be the customer
+        if not BUSINESS_SIDE_EMAIL in email.receiver_email.lower():
+            customerName = email.receiver_name
+            customerEmail = email.receiver_email
+            break
+
     # Create a new Email instance
     new_email = Email(
         sender_email= data['senderEmail'],
         thread_id= thread_id,
         email_subject= data['subject'],
         email_content= data['content'],
-        sender_name = data['senderEmail'].split('@')[0],
-        receiver_email = 'alex@abc.com',
-        receiver_name = 'alex',
+        sender_name = BUSINESS_SIDE_NAME, # data['senderEmail'].split('@')[0],
+        receiver_email = customerEmail,
+        receiver_name = customerName,
         email_received_at=db.func.now()  # Set timestamp to now
     )
     db.session.add(new_email)
