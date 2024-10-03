@@ -193,7 +193,7 @@ def get_all_threads():
             'sentiment': sentiment # sentiments[random.randint(0,len(sentiments)-1)] # Here sentiments which would be generated shall be fetched.
         })
 
-    return jsonify({ "threads": thread_list,"time": datetime.now(timezone.utc).strftime("%d-%m-%y_%H:%M")})
+    return jsonify({ "threads": thread_list,"time": datetime.now(timezone.utc).strftime("%d-%m-%y_%H:%M:%S")})
 
 # 3. GET specific email thread by thread_id with its emails
 @app.route('/all_email_by_thread_id/<int:thread_id>', methods=['GET'])
@@ -492,10 +492,11 @@ def store_email_document():
 
 @app.route("/check_new_emails/<last_updated_timestamp>", methods=["GET"])
 def check_new_emails(last_updated_timestamp):
-    dt = datetime.strptime(last_updated_timestamp, "%d-%m-%y_%H:%M")
+    dt = datetime.strptime(last_updated_timestamp, "%d-%m-%y_%H:%M:%S")
     threads = EmailThread.query.all()
     for thread in threads:
-        if (thread.updated_at > dt):
+        if thread.updated_at > dt:
+            print ("Condition got passed", thread.updated_at,dt)
             return get_all_threads()
     return jsonify([])
 
