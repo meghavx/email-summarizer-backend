@@ -45,6 +45,9 @@ class Email(db.Model):
         return {
             'email_record_id': self.email_record_id,
             'sender_email': self.sender_email,
+            'sender_name': self.sender_name,
+            'receiver_email': self.receiver_email,
+            'receiver_name': self.receiver_name,
             'thread_id': self.thread_id,
             'email_received_at': self.email_received_at.strftime('%B %d, %Y %I:%M %p') if self.email_received_at else None,
             'email_subject': self.email_subject,
@@ -168,7 +171,7 @@ def get_all_threads():
         """
         emails = [{
             'seq_no': i,
-            'sender': email.sender_email.split('@')[0],  # Extracting name from email
+            'sender': email.sender_name,
             'senderEmail': email.sender_email,
             'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
             'content': email.email_content,
@@ -193,7 +196,7 @@ def get_thread_by_id(thread_id):
         return jsonify({'error': 'Thread not found'}), 404
 
     emails = [{
-        'sender': email.sender_email.split('@')[0],  # Extracting name from email
+        'sender': email.sender_name,
         'senderEmail': email.sender_email,
         'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
         'content': email.email_content,
