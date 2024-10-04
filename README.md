@@ -42,3 +42,15 @@ poc=#
 ```bash
 $ python3 app.py
 ```
+
+To run_sentiment_analysis2.py.
+do 
+$ pip3 install -r requirements.txt
+
+and then run 
+
+$ python3 download_sentiment_dep.py
+
+then you can run:
+
+$ python3 run_sentiment_analysis2.py

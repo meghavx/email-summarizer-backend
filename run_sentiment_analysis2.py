@@ -6,6 +6,8 @@ from sqlalchemy import create_engine, Column, Integer, String, Text, TIMESTAMP, 
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
 import random
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+
 
 # SQLAlchemy Base
 Base = declarative_base()
@@ -40,7 +42,41 @@ engine = create_engine(DATABASE_URI)
 Session = sessionmaker(bind=engine)
 session = Session()
 
+
+# Initialize VADER sentiment intensity analyzer
+sid = SentimentIntensityAnalyzer()
+
+def analyze_sentiment_and_priority(text):
+    # Analyze sentiment
+    sentiment_scores = sid.polarity_scores(text)
+    compound = sentiment_scores['compound']
+    
+    # Determine sentiment based on compound score
+    if compound >= 0.05:
+        sentiment = "positive"
+    elif compound <= -0.8:
+        sentiment = "critical negative"  # Very negative sentiment
+    elif compound <= -0.05:
+        sentiment = "negative"
+    else:
+        sentiment = "neutral"
+    
+    # Assign priority based on sentiment
+    if sentiment == 'critical negative':
+        priority = "Critical"
+    elif sentiment == 'negative':
+        priority = "Needs attention"
+    elif sentiment == 'positive':
+        priority = "Positive"
+    else:
+        priority = "Neutral"
+    
+    return priority
+
 def update_sentiment(thread):
+    if not thread:
+        return
+
     current_time = datetime.now()
 
     # Check if a sentiment record exists
@@ -51,17 +87,24 @@ def update_sentiment(thread):
         if time_difference < timedelta(hours=5):
             return  # Sentiment is recent, no need to update
 
-    sentiment_score = random.randint(1,10)
+    emails = [{
+        'senderEmail': email.sender_email,
+        'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
+        'content': email.email_content,
+    } for email in thread.emails]
 
-    # Map sentiment score to categories
-    if sentiment_score > 8:
-        sentiment_category = 'Positive'
-    elif sentiment_score > 6:
-        sentiment_category = 'Needs attention'
-    elif sentiment_score > 3:
-        sentiment_category = 'Neutral'
-    else:
-        sentiment_category = 'Critical'
+    prompt = ""
+
+    for email in emails:
+        sender = email['senderEmail']
+        date = email['date']
+        content = email['content']
+        email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
+        prompt += email_entry
+
+
+
+    sentiment_category = analyze_sentiment_and_priority(prompt)
 
     # Save or update sentiment in the database
     if sentiment_record:
