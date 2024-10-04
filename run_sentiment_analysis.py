@@ -35,7 +35,7 @@ class EmailThreadSentiment(Base):
     thread = relationship("EmailThread", backref="sentiments")
 
 # Database connection setup
-DATABASE_URI = 'postgresql://ruchita:qwerty@localhost/poc'
+DATABASE_URI = 'postgresql://ruchita:qwerty@localhost:5433/poc'
 engine = create_engine(DATABASE_URI)
 Session = sessionmaker(bind=engine)
 session = Session()

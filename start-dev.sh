@@ -1,6 +1,6 @@
 #!/bin/bash
 
-docker stop email_summarizer_db
+docker stop email_summarizer_db_v2
 
 # Define database connection parameters
 DBNAME='poc'
@@ -10,22 +10,22 @@ DB_PASSWORD='qwerty'
 # Start the PostgreSQL container
 echo "Starting PostgreSQL container..."
 docker run \
-                --name email_summarizer_db \
+                --name email_summarizer_db_v2 \
                 -e POSTGRES_PASSWORD=$DB_PASSWORD \
                 -e POSTGRES_USER=$DBUSERNAME \
                 -e POSTGRES_DB=$DBNAME \
-                -p 5432:5432 \
+                -p 5433:5432 \
                 --rm -d \
                 postgres:17.0-alpine3.20
 
 # Wait for the container to be available
 echo "Waiting for PostgreSQL to start..."
-while ! docker exec -it email_summarizer_db psql -U $DBUSERNAME -d $DBNAME  -c "\l"; do sleep 4; done
+while ! docker exec -it email_summarizer_db_v2 psql -U $DBUSERNAME -d $DBNAME  -c "\l"; do sleep 4; done
 
 # Insert data from schema.sql
 echo "Inserting data into database..."
-docker cp schema.sql email_summarizer_db:/
-docker exec -it email_summarizer_db psql -U $DBUSERNAME -d $DBNAME -c "\i schema.sql"
+docker cp schema.sql email_summarizer_db_v2:/
+docker exec -it email_summarizer_db_v2 psql -U $DBUSERNAME -d $DBNAME -c "\i schema.sql"
 
 # Run the Python script
 echo "Running Python script..."

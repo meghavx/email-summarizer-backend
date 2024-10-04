@@ -12,7 +12,7 @@ from threading import Thread
 
 app = Flask(__name__)
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://ruchita:qwerty@localhost/poc'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://ruchita:qwerty@localhost:5433/poc'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -141,17 +141,11 @@ class SOPDocument(db.Model):
 def hello():
     return "Hello, User!"
 
-# 1. GET all emails
-@app.route('/all_emails', methods=['GET'])
-def get_all_emails():
-    emails = Email.query.all()
-    emails_list = [email.to_dict() for email in emails]
-    return jsonify(emails_list)
 
 # 2. GET all email threads with their associated emails
 @app.route('/all_email_threads', methods=['GET'])
 def get_all_threads():
-    threads = EmailThread.query.order_by('thread_id').all()
+    threads = EmailThread.query.order_by(EmailThread.updated_at.desc(),EmailThread.created_at.desc(),EmailThread.thread_id.desc()).all()
     thread_list = []
     
     for thread in threads:
@@ -196,29 +190,6 @@ def get_all_threads():
 
     return jsonify({ "threads": thread_list,"time": datetime.now(timezone.utc).strftime("%d-%m-%y_%H:%M:%S")})
 
-@app.route('/all_email_by_thread_id/<int:thread_id>', methods=['GET'])
-def get_thread_by_id(thread_id):
-    thread = EmailThread.query.get(thread_id)
-
-    if not thread:
-        return jsonify({'error': 'Thread not found'}), 404
-
-    emails = [{
-        'sender': email.sender_name,
-        'senderEmail': email.sender_email,
-        'receiver': email.receiver_name,
-        'receiverEmail': email.receiver_email,
-        'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
-        'content': email.email_content,
-        'isOpen': False  # Assuming 'isOpen' is false for simplicity
-    } for email in thread.emails]
-
-    thread_data = {
-        'threadTitle': thread.thread_topic,
-        'emails': emails
-    }
-    return jsonify(thread_data)
-
 def sortEmails(emailList):
     return sorted(emailList, key=lambda email: email.email_received_at)
 
@@ -227,47 +198,69 @@ def summarize_thread_by_id(thread_id):
     thread = EmailThread.query.get(thread_id)
     if not thread:
         return jsonify({'error': 'Thread not found'}), 404
-    
-    sorted_emails = sortEmails(thread.emails)
-    # Request body to be sent along to the AI Team's
-    # `summarize email thread` endpoint call
-    request_body = {
-        'email_thread_id': thread.thread_id,
-        'email_subject': thread.thread_topic,
-        'email_messages': [
-            {
-                'sender': email.sender_name,
-                'sequence_no': index + 1,
-                'content': email.email_content
-            }
-            for index, email in enumerate(sorted_emails)
-        ]
-    }
 
-    """
-    # Call AI Team's `summarize thread` (POST) Endpoint
-    # with request body as generated above
-    # And receive the returned summarized version as `response` 
-    response = --Call to the AI Team's Endpoint
+    # Fetch the existing summary for the thread ID
+    summary = Summary.query.filter_by(thread_id=thread_id).first()
 
-    # Construct thread summary record with given thread_id
-    # and `response` received as above as summary content
-    thread_summary = ThreadSummary(
-        thread_id = thread.thread_id,
-        summary_content = str(response)
+    if summary and thread.updated_at <= summary.summary_modified_at:
+        # If the summary exists and the thread hasn't been updated since the summary was last modified
+        return (summary.summary_content)
+
+    # Collect email data for the thread
+    emails = [{
+        'senderEmail': email.sender_email,
+        'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
+        'content': email.email_content,
+    } for email in thread.emails]
+
+    # Prepare the prompt for generating the summary
+    prompt = f"""Please quickly summarize the following email thread titled '{thread.thread_topic}' in 2-3 points. 
+                Include the main points, important decisions, and highlight any significant dates. Here is the list of emails in the thread:\n\n"""
+
+    for email in emails:
+        sender = email['senderEmail']
+        date = email['date']
+        content = email['content']
+        email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
+        prompt += email_entry
+
+    # Ollama code to generate the summary
+    stream = ollama.chat(
+        model='llama3.2',
+        messages=[{'role': 'user', 'content': prompt}],
+        stream=True,
     )
 
-    # Store summary record to DB
-    db.session.add(thread_summary)
-    db.session.commit()  
+    # Function to generate and save the summary
+    def generate_summary():
+        summary_content = ''
 
-    # Send back an OK status  
-    return jsonify({}), 200
-    """
+        first_chunk = True
+        for chunk in stream:
+            if not first_chunk:
+                yield ' '
+            message_chunk = chunk['message']['content']
+            yield message_chunk
+            summary_content += message_chunk
+            first_chunk = False
 
-    # Temporary return statement
-    return jsonify({'summary':"Here is the summary of the data...summary summary summary"})
+        # Save or update the summary in the database
+        if summary:
+            summary.summary_content = summary_content
+            summary.summary_modified_at = datetime.utcnow()
+        else:
+            new_summary = Summary(
+                thread_id=thread_id,
+                summary_content=summary_content,
+                summary_created_at=datetime.utcnow(),
+                summary_modified_at=datetime.utcnow()
+            )
+            db.session.add(new_summary)
 
+        db.session.commit()
+
+    # Return a streaming response using Flask's Response object
+    return Response(stream_with_context(generate_summary()), content_type='application/json')
 """
 curl --request POST \
   --url http://localhost:5000/create/email \
@@ -605,4 +598,4 @@ def check_new_emails(last_updated_timestamp):
 
 # Run the application
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True,port=5001)
