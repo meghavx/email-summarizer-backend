@@ -156,7 +156,7 @@ def get_all_emails():
 # 2. GET all email threads with their associated emails
 @app.route('/all_email_threads', methods=['GET'])
 def get_all_threads():
-    threads = EmailThread.query.order_by('thread_id').all()
+    threads = EmailThread.query.order_by(EmailThread.updated_at.desc(),EmailThread.created_at.desc(),EmailThread.thread_id.desc()).all()
     thread_list = []
     for thread in threads:
         sentiment_record = EmailThreadSentiment.query.filter_by(thread_id=thread.thread_id).first()
