@@ -847,7 +847,7 @@ VALUES
    || 'Thanks again for your help!Best regards,Sarah Lee'),
 
   ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Sarah Lee', 12372, '2024-08-27 11:00:00', 'Product Inquiry: New Collection Availability',
-   'Dear Sarah,We’ve updated your shipping address as requested.')
+   'Dear Sarah,We’ve updated your shipping address as requested.');
 
 
 
