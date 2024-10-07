@@ -6,7 +6,30 @@ from sqlalchemy import create_engine, Column, Integer, String, Text, TIMESTAMP, 
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
 import random
-from nltk.sentiment.vader import SentimentIntensityAnalyzer
+
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+from langchain.chains import RetrievalQA
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_community.vectorstores import FAISS
+from langchain_community.document_loaders import PyPDFDirectoryLoader
+from langchain_openai import OpenAIEmbeddings
+import os
+
+# Load environment variables
+load_dotenv()
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+
+# Text Splitter for breaking down the SOP document
+text_splitter = RecursiveCharacterTextSplitter(
+    separators=['\n\n', '\n', '.', ','],
+    chunk_size=750,
+    chunk_overlap=50
+)
+
+
+# LLM for answering questions (using ChatOpenAI for chat model support)
+llm = ChatOpenAI(model="gpt-4", temperature=0.5, max_tokens=1000)
 
 
 # SQLAlchemy Base
@@ -43,28 +66,49 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 
-# Initialize VADER sentiment intensity analyzer
-sid = SentimentIntensityAnalyzer()
+def get_sentiment_score(text):
+
+    messages = [
+    (
+        "system",
+        f"""
+     You are given a thread of emails between customer and customer support. Analyze the email thread and find the sentiment of the email 
+     discussion. Give me a number between 1 to 10 (> 8 means critical, >6 means needs attention, > 3 means neutral and else positive) \n
+     remember to only return the number and nothing else:\n\n
+     
+    """,
+    ),
+    ("human", "Discussion: " + text),
+    ]
+
+
+    ai_msg = llm.invoke(messages)
+    
+    return (ai_msg.content)
+
 
 def analyze_sentiment_and_priority(text):
     # Analyze sentiment
-    sentiment_scores = sid.polarity_scores(text)
-    compound = sentiment_scores['compound']
-    
+    res = get_sentiment_score(text)
+    try:
+        sentiment_score = int(res.strip())
+    except ValueError:
+        print("Error parsing sentiment score.", res)
+        return
     # Determine sentiment based on compound score
-    if compound >= 0.05:
-        sentiment = "positive"
-    elif compound <= -0.8:
-        sentiment = "critical negative"  # Very negative sentiment
-    elif compound <= -0.05:
-        sentiment = "negative"
+    if sentiment_score >= 8:
+        sentiment = "critical"
+    elif sentiment_score > 6:
+        sentiment = "needs attention"  # Very negative sentiment
+    elif sentiment_score > 3:
+        sentiment = "netural"
     else:
-        sentiment = "neutral"
+        sentiment = "positive"
     
     # Assign priority based on sentiment
-    if sentiment == 'critical negative':
+    if sentiment == 'critical':
         priority = "Critical"
-    elif sentiment == 'negative':
+    elif sentiment == 'needs attention':
         priority = "Needs attention"
     elif sentiment == 'positive':
         priority = "Positive"
