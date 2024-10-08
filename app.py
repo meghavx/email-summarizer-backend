@@ -27,13 +27,7 @@ class EmailThread(db.Model):
     thread_topic = db.Column(db.String(50), nullable=False)
     created_at = db.Column(db.TIMESTAMP, default=db.func.now())  # Default to current timestamp
     updated_at = db.Column(db.TIMESTAMP, default=db.func.now(), onupdate=db.func.now())  # Auto-update on modification
-
-    def to_dict(self):
-        return {
-            'thread_id': self.thread_id,
-            'thread_topic': self.thread_topic
-        }
-
+    
 class Email(db.Model):
     __tablename__   = 'emails'
     email_record_id = db.Column(db.Integer, primary_key=True)
@@ -45,23 +39,8 @@ class Email(db.Model):
     email_received_at = db.Column(db.TIMESTAMP, nullable=True)
     email_subject = db.Column(db.String(50), nullable=False)
     email_content = db.Column(db.Text, nullable=True)
-
     email_thread = db.relationship('EmailThread', backref=db.backref('emails', lazy=True))
 
-    def to_dict(self):
-        return {
-            'email_record_id': self.email_record_id,
-            'sender_email': self.sender_email,
-            'sender_name': self.sender_name,
-            'receiver_email': self.receiver_email,
-            'receiver_name': self.receiver_name,
-            'thread_id': self.thread_id,
-            'email_received_at': self.email_received_at.strftime('%B %d, %Y %I:%M %p') if self.email_received_at else None,
-            'email_subject': self.email_subject,
-            'email_content': self.email_content
-        }
-
-# Summaries model
 class Summary(db.Model):
     __tablename__ = 'summaries'
     summary_id = db.Column(db.Integer, primary_key=True)  # SERIAL equivalent
@@ -69,22 +48,8 @@ class Summary(db.Model):
     summary_content = db.Column(db.Text, nullable=False)
     summary_created_at = db.Column(db.TIMESTAMP, default=db.func.now())  # Default to current timestamp
     summary_modified_at = db.Column(db.TIMESTAMP, default=db.func.now(), onupdate=db.func.now())  # Auto-update on modification
-
-    # Relationship to Thread
     thread = db.relationship('EmailThread', backref=db.backref('summaries', lazy=True))
 
-    def to_dict(self):
-        return {
-            'summary_id': self.summary_id,
-            'thread_id': self.thread_id,
-            'summary_content': self.summary_content,
-            'summary_created_at': self.summary_created_at.strftime('%B %d, %Y %I:%M %p'),
-            'summary_modified_at': self.summary_modified_at.strftime('%B %d, %Y %I:%M %p')
-        }
-
- # 4. SBP-3 [ 26th Sept 2024 ]
-
-# Modified as per UI requirements
 class SentimentEnum(db.Enum):
     CRITICAL = 'Critical'
     NEEDS_ATTENTION = 'Needs attention'
@@ -98,7 +63,6 @@ class EmailThreadSentiment(db.Model):
     thread_id = db.Column(db.Integer, db.ForeignKey('threads.thread_id'), nullable=False, primary_key=True)  # Foreign key to threads
     sentiments = db.Column(Enum('Critical', 'Needs attention', 'Neutral', 'Positive', name='sentiment'), nullable=False)
     timestamp = db.Column(db.TIMESTAMP, default=db.func.now()) 
-    # Relationship to Thread
     thread = db.relationship('EmailThread', backref=db.backref('sentiments', lazy=True))
 
     @classmethod
@@ -120,13 +84,6 @@ class EmailThreadSentiment(db.Model):
         
         db.session.commit()
 
-    def to_dict(self):
-        return {
-            'thread_id': self.thread_id,
-            'sentiments': self.sentiments,
-            'timestamp': self.timestamp.strftime('%B %d, %Y %I:%M %p')
-        }
-
 # SOP Document model
 class SOPDocument(db.Model):
     __tablename__ = 'sop_document'
@@ -134,26 +91,11 @@ class SOPDocument(db.Model):
     doc_content = db.Column(db.LargeBinary, nullable=False)
     doc_timestamp = db.Column(db.TIMESTAMP, default=db.func.now()) 
 
-    def to_dict(self):
-        return {
-            'doc_id': self.doc_id,
-            'doc_content': self.doc_content,
-            'doc_timestamp': self.doc_timestamp
-        } 
-
 # Routes
 @app.route('/')
 def hello():
     return "Hello, User!"
 
-# 1. GET all emails
-@app.route('/all_emails', methods=['GET'])
-def get_all_emails():
-    emails = Email.query.all()
-    emails_list = [email.to_dict() for email in emails]
-    return jsonify(emails_list)
-
-# 2. GET all email threads with their associated emails
 @app.route('/all_email_threads', methods=['GET'])
 def get_all_threads():
     threads = EmailThread.query.order_by(EmailThread.updated_at.desc(),EmailThread.created_at.desc(),EmailThread.thread_id.desc()).all()
@@ -276,19 +218,6 @@ def summarize_thread_by_id(thread_id):
     # Temporary return statement
     return jsonify({'summary':"Here is the summary of the data...summary summary summary"})
 
-"""
-curl --request POST \
-  --url http://localhost:5000/create/email \
-  --header 'Content-Type: application/json' \
-  --header 'User-Agent: insomnia/10.0.0' \
-  --data '{
-	"sender_email": "tushar@abc.com",
-	"email_subject": "Enquiry about refund",
-	"email_content" : "I wanted to know what happend to my refund. Thanks"
-}'
-"""
-
-# Compose a new email
 @app.route('/create/email', methods=['POST'])
 def create_email():
     data = request.json  # Parse the incoming JSON data
@@ -303,13 +232,13 @@ def create_email():
     db.session.flush()  # This will generate an ID for the new thread before committing
 
     new_email = Email(
-        sender_email= BUSINESS_SIDE_EMAIL,
-        sender_name=BUSINESS_SIDE_NAME,
+        sender_email = data['senderEmail'],
+        sender_name = data['senderEmail'].split('@')[0],
         thread_id= new_thread.thread_id,
         email_subject= data['subject'],
         email_content= data['content'],
-        receiver_email = data['senderEmail'],
-        receiver_name = " ".join(list(map(str.capitalize, data['senderEmail'].split('@')[0].split('.')))),
+        receiver_email = BUSINESS_SIDE_EMAIL,
+        receiver_name = BUSINESS_SIDE_NAME ,
         email_received_at=db.func.now()  # Set timestamp to now
     )
     db.session.add(new_email)
@@ -317,18 +246,6 @@ def create_email():
 
     return jsonify({'success': 'Email and thread created successfully', 'thread_id': new_thread.thread_id, 'email_record_id': new_email.email_record_id}), 201
 
-""""
-curl --request POST \
-  --url http://localhost:5000/create/email/2 \
-  --header 'Content-Type: application/json' \
-  --data '{
-	"sender_email" : "nehal@abc.com", 
-	"email_subject": "refund",
-	"email_content": "asdasdasdas "
-}'
-"""
-
-# Reply to an existing email thread
 @app.route('/create/email/<int:thread_id>', methods=['POST'])
 def add_email_to_thread(thread_id):
     data = request.json  # Parse the incoming JSON data
@@ -349,7 +266,7 @@ def add_email_to_thread(thread_id):
         thread_id= thread_id,
         email_subject= data['subject'],
         email_content= data['content'],
-        sender_name = BUSINESS_SIDE_NAME,
+        sender_name = data['senderEmail'].split('@')[0],
         receiver_email = customerEmail,
         receiver_name = customerName,
         email_received_at=db.func.now()  # Set timestamp to now
@@ -455,12 +372,6 @@ def get_pdf_content_by_doc_id(doc_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# 5. SBER-2 [ 30th Sept 2024 ]
-
-# Adding email to database based on thread id and document id (considering primary key)
-# Response body AI Team
-
 def store_email_document_(thread_id, doc_id):
     with app.app_context():
       # Fetch all valid email thread based on thread_id
@@ -479,15 +390,16 @@ def store_email_document_(thread_id, doc_id):
           reverse=True
       )
       latest_email = sorted_emails[0]
+      print ("latest_email",latest_email)
       # AI Team's response to the latest email in this thread
       content = get_answer_from_email(email_thread.thread_topic,latest_email.email_content,latest_email.sender_name,document)
-      customerName = customerEmail = getCustomerNameAndEmail(email_thread.emails)
+      customerName, customerEmail = latest_email.sender_name,latest_email.sender_email
       new_email = Email(
           sender_email= BUSINESS_SIDE_EMAIL,
+          sender_name = BUSINESS_SIDE_NAME,
           thread_id= thread_id,
           email_subject= email_thread.thread_topic,
           email_content= content,
-          sender_name = BUSINESS_SIDE_NAME,
           receiver_email = customerName,
           receiver_name = customerEmail,
           email_received_at=db.func.now()  # Set timestamp to now
