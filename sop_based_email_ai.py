@@ -46,16 +46,16 @@ def get_answer_from_email(email_subject, email_message, sender_name, doc_content
     prompt = f"""
     You are a helpful assistant that generates responses based on company SOP guidelines.
     The query is an email with the subject: "{email_subject}".
-    Below is the message asking about a specific process related to the company SOP.
+    Below is the email discussion asking about a specific process related to the company SOP.
     generate a formal and professional response to this email, addressing each point appropriately.
 
     Refer yourself as ABC support at the end of the mail.
 
     Email sender name: {sender_name}
-    Email Message: {email_message}
+    Email discussion: {email_message}
 
     Make sure to refer to the appropriate procedures mentioned in the subject and provide a comprehensive response,
-    including step-by-step guidelines, documentation, and any relevant timelines. Don't mention subject line in the response.
+    including step-by-step guidelines, documentation, and any relevant timelines. Don't add subject line in the response.
     
     
     """

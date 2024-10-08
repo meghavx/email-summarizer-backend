@@ -7,6 +7,8 @@ from PyPDF2 import PdfReader
 import io
 from sop_based_email_ai import get_answer_from_email
 from threading import Thread
+from openai import OpenAI
+import os
 
 app = Flask(__name__)
 
@@ -15,6 +17,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 CORS(app)
+
+client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY"),
+)
 
 # GLOBAL VARIABLES
 BUSINESS_SIDE_NAME = "Support Team"
@@ -111,7 +117,6 @@ def getSentimentHelper(sentiment_record):
         sentiment = 'positive'
     return sentiment
 
-
 @app.route('/all_email_threads', methods=['GET'])
 def get_all_threads():
     threads = EmailThread.query.order_by(EmailThread.updated_at.desc(),EmailThread.created_at.desc(),EmailThread.thread_id.desc()).all()
@@ -155,44 +160,45 @@ def summarize_thread_by_id(thread_id):
         return jsonify({'error': 'Thread not found'}), 404
     
     sorted_emails = sortEmails(thread.emails)
-    # Request body to be sent along to the AI Team's
-    # `summarize email thread` endpoint call
-    request_body = {
-        'email_thread_id': thread.thread_id,
-        'email_subject': thread.thread_topic,
-        'email_messages': [
-            {
-                'sender': email.sender_name,
-                'sequence_no': index + 1,
-                'content': email.email_content
-            }
-            for index, email in enumerate(sorted_emails)
-        ]
-    }
+    discussion_thread = ""
+    for email in sorted_emails:
+        sender = email.sender_email
+        date = email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None
+        content = email.email_content
+        email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
+        discussion_thread += email_entry
 
-    """
-    # Call AI Team's `summarize thread` (POST) Endpoint
-    # with request body as generated above
-    # And receive the returned summarized version as `response` 
-    response = --Call to the AI Team's Endpoint
 
-    # Construct thread summary record with given thread_id
-    # and `response` received as above as summary content
-    thread_summary = ThreadSummary(
+    # Create a completion request to summarize the email content
+    completion = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+        {
+            "role": "user", "content": f"""
+            You are given below an email disucssion thread.
+            Summarize the email  pointwise in 3 new lines - "
+            1.Subject 
+            2.Meeting Agenda 
+            3.Important dates. 
+            "
+            Discussion thread:
+
+          """ + discussion_thread
+         }
+    ])
+
+    response = completion.choices[0].message.content.strip()
+
+    thread_summary = Summary(
         thread_id = thread.thread_id,
-        summary_content = str(response)
+        summary_content = response
     )
 
     # Store summary record to DB
     db.session.add(thread_summary)
     db.session.commit()  
 
-    # Send back an OK status  
-    """
-    return jsonify({}), 200
-
-    # Temporary return statement
-    return jsonify({'summary':"Here is the summary of the data...summary summary summary"})
+    return (response)
 
 @app.route('/create/email', methods=['POST'])
 def create_email():
@@ -254,7 +260,6 @@ def add_email_to_thread(thread_id):
 
 # Helper funtion to extract customer name and email from a list of emails
 def getCustomerNameAndEmail(emails):
-    customerName = customerEmail = None
     for email in emails:
         # If email receiver is not the business itself then it must be the customer
         if not BUSINESS_SIDE_EMAIL in email.receiver_email.lower():
@@ -265,12 +270,9 @@ def getCustomerNameAndEmail(emails):
 def store_sop_doc_to_db():
     if "file" not in request.files:
         return jsonify({'error': 'No file part'}), 400
-    
     file = request.files["file"]
-
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
-    
     binary_data = file.read()
     sop_document = SOPDocument(doc_content=binary_data)
     db.session.add(sop_document)
@@ -279,22 +281,13 @@ def store_sop_doc_to_db():
 
 def get_pdf_content_by_doc_id(doc_id):
     try:
-        # Query the database to get the document by doc_id
         sop_document = SOPDocument.query.filter_by(doc_id=doc_id).one()
-
         if sop_document == None:
             return ""
-
-        # Read the PDF content from the binary data
         pdf_file = io.BytesIO(sop_document.doc_content)
         reader = PdfReader(pdf_file)
-        
-        # Extract text from all pages
         pdf_content = " ".join([page.extract_text() for page in reader.pages])
         return pdf_content
-
-    # except NoResultFound:
-    #     return jsonify({'error': 'Document not found with the provided doc_id'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -316,10 +309,20 @@ def store_email_document_(thread_id, doc_id):
           reverse=True
       )
       latest_email = sorted_emails[0]
-      print ("latest_email",latest_email)
-      # AI Team's response to the latest email in this thread
-      content = get_answer_from_email(email_thread.thread_topic,latest_email.email_content,latest_email.sender_name,document)
+      print ("latest_email",latest_email.email_content)
+      
+      discussion_thread = ""
+      for email in sorted_emails:
+        sender = email.sender_email
+        date = email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None
+        content = email.email_content
+        email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
+        discussion_thread += email_entry
+
+      content = get_answer_from_email(email_thread.thread_topic,discussion_thread,latest_email.sender_name,document)
+      
       customerName, customerEmail = latest_email.sender_name,latest_email.sender_email
+      
       new_email = Email(
           sender_email= BUSINESS_SIDE_EMAIL,
           sender_name = BUSINESS_SIDE_NAME,
