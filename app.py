@@ -29,12 +29,6 @@ class EmailThread(db.Model):
     created_at = db.Column(db.TIMESTAMP, default=db.func.now())  # Default to current timestamp
     updated_at = db.Column(db.TIMESTAMP, default=db.func.now(), onupdate=db.func.now())  # Auto-update on modification
 
-    def to_dict(self):
-        return {
-            'thread_id': self.thread_id,
-            'thread_topic': self.thread_topic
-        }
-
 class Email(db.Model):
     __tablename__   = 'emails'
     email_record_id = db.Column(db.Integer, primary_key=True)
@@ -46,21 +40,7 @@ class Email(db.Model):
     email_received_at = db.Column(db.TIMESTAMP, nullable=True)
     email_subject = db.Column(db.String(50), nullable=False)
     email_content = db.Column(db.Text, nullable=True)
-
     email_thread = db.relationship('EmailThread', backref=db.backref('emails', lazy=True))
-
-    def to_dict(self):
-        return {
-            'email_record_id': self.email_record_id,
-            'sender_email': self.sender_email,
-            'sender_name': self.sender_name,
-            'receiver_email': self.receiver_email,
-            'receiver_name': self.receiver_name,
-            'thread_id': self.thread_id,
-            'email_received_at': self.email_received_at.strftime('%B %d, %Y %I:%M %p') if self.email_received_at else None,
-            'email_subject': self.email_subject,
-            'email_content': self.email_content
-        }
 
 class Summary(db.Model):
     __tablename__ = 'summaries'
@@ -70,15 +50,6 @@ class Summary(db.Model):
     summary_created_at = db.Column(db.TIMESTAMP, default=db.func.now())  # Default to current timestamp
     summary_modified_at = db.Column(db.TIMESTAMP, default=db.func.now(), onupdate=db.func.now())  # Auto-update on modification
     thread = db.relationship('EmailThread', backref=db.backref('summaries', lazy=True))
-
-    def to_dict(self):
-        return {
-            'summary_id': self.summary_id,
-            'thread_id': self.thread_id,
-            'summary_content': self.summary_content,
-            'summary_created_at': self.summary_created_at.strftime('%B %d, %Y %I:%M %p'),
-            'summary_modified_at': self.summary_modified_at.strftime('%B %d, %Y %I:%M %p')
-        }
 
 class SentimentEnum(db.Enum):
     CRITICAL = 'Critical'
@@ -92,7 +63,6 @@ class EmailThreadSentiment(db.Model):
     thread_id = db.Column(db.Integer, db.ForeignKey('threads.thread_id'), nullable=False, primary_key=True)  # Foreign key to threads
     sentiments = db.Column(Enum('Critical', 'Needs attention', 'Neutral', 'Positive', name='sentiment'), nullable=False)
     timestamp = db.Column(db.TIMESTAMP, default=db.func.now()) 
-    # Relationship to Thread
     thread = db.relationship('EmailThread', backref=db.backref('sentiments', lazy=True))
 
     @classmethod
@@ -114,35 +84,32 @@ class EmailThreadSentiment(db.Model):
         
         db.session.commit()
 
-    def to_dict(self):
-        return {
-            'thread_id': self.thread_id,
-            'sentiments': self.sentiments,
-            'timestamp': self.timestamp.strftime('%B %d, %Y %I:%M %p')
-        }
-
-# SOP Document model
 class SOPDocument(db.Model):
     __tablename__ = 'sop_document'
     doc_id = db.Column(db.Integer, primary_key=True)
     doc_content = db.Column(db.LargeBinary, nullable=False)
     doc_timestamp = db.Column(db.TIMESTAMP, default=db.func.now()) 
 
-    def to_dict(self):
-        return {
-            'doc_id': self.doc_id,
-            'doc_content': self.doc_content,
-            'doc_timestamp': self.doc_timestamp
-        } 
-
-# Routes
-
 @app.route('/')
 def hello():
     return "Hello, User!"
 
+def getSentimentHelper(sentiment_record):
+    sentiment_ = sentiment_record.sentiments if sentiment_record else 'Positive'
+    sentiment = ""
+    if (sentiment_ == 'Positive'):
+        sentiment = "postive"
+    elif (sentiment_ == 'Neutral'):
+        sentiment = 'neutral'
+    elif (sentiment_ == 'Needs attention'):
+        sentiment = 'needs_attention'
+    elif (sentiment_ == 'Critical'):
+        sentiment = 'critical'
+    else:
+        print ("something went wrong",sentiment_)
+        sentiment = 'positive'
+    return sentiment
 
-# 2. GET all email threads with their associated emails
 @app.route('/all_email_threads', methods=['GET'])
 def get_all_threads():
     threads = EmailThread.query.order_by(EmailThread.updated_at.desc(),EmailThread.created_at.desc(),EmailThread.thread_id.desc()).all()
@@ -155,20 +122,7 @@ def get_all_threads():
             reverse=True
         )
         sentiment_record = EmailThreadSentiment.query.filter_by(thread_id=thread.thread_id).first()
-        
-        sentiment_ = sentiment_record.sentiments if sentiment_record else 'Positive'
-        sentiment = ""
-        if (sentiment_ == 'Positive'):
-            sentiment = "postive"
-        elif (sentiment_ == 'Neutral'):
-            sentiment = 'neutral'
-        elif (sentiment_ == 'Needs attention'):
-            sentiment = 'needs_attention'
-        elif (sentiment_ == 'Critical'):
-            sentiment = 'critical'
-        else:
-            print ("something went wrong")
-            sentiment = 'positive'
+        sentiment = getSentimentHelper(sentiment_record)
 
         emails = [{
             'seq_no': i,
@@ -178,7 +132,7 @@ def get_all_threads():
             'receiverEmail': email.receiver_email,
             'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
             'content': email.email_content,
-            'isOpen': False  # Assuming 'isOpen' is false for simplicity
+            'isOpen': False  
         } for i, email in enumerate(sorted_emails)]
         
         thread_list.append({
@@ -190,30 +144,23 @@ def get_all_threads():
 
     return jsonify({ "threads": thread_list,"time": datetime.now(timezone.utc).strftime("%d-%m-%y_%H:%M:%S")})
 
-def sortEmails(emailList):
-    return sorted(emailList, key=lambda email: email.email_received_at)
-
 @app.post('/summarize/<int:thread_id>')
 def summarize_thread_by_id(thread_id):
     thread = EmailThread.query.get(thread_id)
     if not thread:
         return jsonify({'error': 'Thread not found'}), 404
 
-    # Fetch the existing summary for the thread ID
     summary = Summary.query.filter_by(thread_id=thread_id).first()
 
     if summary and thread.updated_at <= summary.summary_modified_at:
-        # If the summary exists and the thread hasn't been updated since the summary was last modified
         return (summary.summary_content)
 
-    # Collect email data for the thread
     emails = [{
         'senderEmail': email.sender_email,
         'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
         'content': email.email_content,
     } for email in thread.emails]
 
-    # Prepare the prompt for generating the summary
     prompt = f"""Please quickly summarize the following email thread titled '{thread.thread_topic}' in 2-3 points. 
                 Include the main points, important decisions, and highlight any significant dates. Here is the list of emails in the thread:\n\n"""
 
@@ -224,14 +171,12 @@ def summarize_thread_by_id(thread_id):
         email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
         prompt += email_entry
 
-    # Ollama code to generate the summary
     stream = ollama.chat(
         model='llama3.2',
         messages=[{'role': 'user', 'content': prompt}],
         stream=True,
     )
 
-    # Function to generate and save the summary
     def generate_summary():
         summary_content = ''
 
@@ -244,128 +189,84 @@ def summarize_thread_by_id(thread_id):
             summary_content += message_chunk
             first_chunk = False
 
-        # Save or update the summary in the database
         if summary:
             summary.summary_content = summary_content
-            summary.summary_modified_at = datetime.utcnow()
+            summary.summary_modified_at = datetime.now(timezone.utc)
         else:
             new_summary = Summary(
                 thread_id=thread_id,
                 summary_content=summary_content,
-                summary_created_at=datetime.utcnow(),
-                summary_modified_at=datetime.utcnow()
+                summary_created_at=datetime.now(timezone.utc),
+                summary_modified_at=datetime.now(timezone.utc)
             )
             db.session.add(new_summary)
-
         db.session.commit()
-
     # Return a streaming response using Flask's Response object
     return Response(stream_with_context(generate_summary()), content_type='application/json')
-"""
-curl --request POST \
-  --url http://localhost:5000/create/email \
-  --header 'Content-Type: application/json' \
-  --header 'User-Agent: insomnia/10.0.0' \
-  --data '{
-	"sender_email": "tushar@abc.com",
-	"email_subject": "Enquiry about refund",
-	"email_content" : "I wanted to know what happend to my refund. Thanks"
-}'
-"""
 
 @app.route('/create/email', methods=['POST'])
 def create_email():
-    data = request.json  # Parse the incoming JSON data
-
-    # Validate the necessary fields
+    data = request.json 
+    
     if not all(k in data for k in ("senderEmail", "subject", "content")):
         return jsonify({'error': 'Missing required fields'}), 400
 
-    # Create new EmailThread and Email instances
     new_thread = EmailThread(thread_topic = data['subject'])
     db.session.add(new_thread)
-    db.session.flush()  # This will generate an ID for the new thread before committing
+    db.session.flush()  
 
     new_email = Email(
-        sender_email= BUSINESS_SIDE_EMAIL,
-        sender_name=BUSINESS_SIDE_NAME,
-        thread_id= new_thread.thread_id,
-        email_subject= data['subject'],
-        email_content= data['content'],
-        receiver_email = data['senderEmail'],
-        receiver_name = " ".join(list(map(str.capitalize, data['senderEmail'].split('@')[0].split('.')))),
-        email_received_at=db.func.now()  # Set timestamp to now
+        sender_email = data['senderEmail'],
+        sender_name = data['senderEmail'].split('@')[0],
+        thread_id = new_thread.thread_id,
+        email_subject = data['subject'],
+        email_content = data['content'],
+        receiver_email = BUSINESS_SIDE_EMAIL,
+        receiver_name = BUSINESS_SIDE_NAME,
+        email_received_at = db.func.now()  # Set timestamp to now
     )
     db.session.add(new_email)
     db.session.commit()
 
     return jsonify({'success': 'Email and thread created successfully', 'thread_id': new_thread.thread_id, 'email_record_id': new_email.email_record_id}), 201
 
-""""
-curl --request POST \
-  --url http://localhost:5000/create/email/2 \
-  --header 'Content-Type: application/json' \
-  --data '{
-	"sender_email" : "nehal@abc.com", 
-	"email_subject": "refund",
-	"email_content": "asdasdasdas "
-}'
-"""
-
-# Reply to an existing email thread
 @app.route('/create/email/<int:thread_id>', methods=['POST'])
 def add_email_to_thread(thread_id):
-    data = request.json  # Parse the incoming JSON data
+    data = request.json 
     
-    # Validate the necessary fields
     if not all(k in data for k in ("senderEmail", "subject", "content")):
         return jsonify({'error': 'Missing required fields'}), 400
 
-    # Check if the thread exists
     thread = EmailThread.query.get(thread_id)
     if not thread:
         return jsonify({'error': 'Thread not found'}), 404
 
-    customerName = "Customer"
-    customerEmail = "customer@xyz.com"
-    for email in thread.emails:
-        # If email receiver is not the business itself then it should be the customer
-        if not BUSINESS_SIDE_EMAIL in email.receiver_email.lower():
-            customerName = email.receiver_name
-            customerEmail = email.receiver_email
-            break
-
-    # Create a new Email instance
     new_email = Email(
-        sender_email= data['senderEmail'],
-        thread_id= thread_id,
-        email_subject= data['subject'],
-        email_content= data['content'],
-        sender_name = BUSINESS_SIDE_NAME, # data['senderEmail'].split('@')[0],
-        receiver_email = customerEmail,
-        receiver_name = customerName,
-        email_received_at=db.func.now()  # Set timestamp to now
+        sender_email = BUSINESS_SIDE_EMAIL ,
+        sender_name = BUSINESS_SIDE_NAME, 
+        thread_id = thread_id,
+        email_subject = data['subject'],
+        email_content = data['content'],
+        receiver_email = data['senderEmail'],
+        receiver_name = data['senderEmail'].split('@')[0],
+        email_received_at = db.func.now()  
     )
     db.session.add(new_email)
     db.session.commit()
 
     return jsonify({'success': 'Email added to thread', 'email_record_id': new_email.email_record_id}), 201
 
-
- # 4. SBP-3 [ 26th Sept 2024 ]
 @app.route('/generate_sentiment/<int:email_thread_id>', methods=['POST'])
 def generate_sentiment(email_thread_id):
-    # Fetch the email thread based on email_thread_id
     email_thread = EmailThread.query.get(email_thread_id)
+    
     if not email_thread:
         return jsonify({'error': 'Email thread not found'}), 404
     
-    # Fetch all emails related to the thread
     emails = email_thread.emails
     if not emails:
         return jsonify({'error': 'No emails found in this thread.'}), 404
 
-    # Prepare the LLM prompt to assess sentiment based on the email thread
     prompt = f"""
     Please evaluate the sentiment of the following email thread based on a scale from 1 to 10. The sentiment categories are as follows:
     
@@ -380,8 +281,6 @@ def generate_sentiment(email_thread_id):
 
     Emails:
     """
-    
-    # Iterate through the emails and format them into a readable string for the LLM
     for email in emails:
         sender = email.sender_email
         date = email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None
@@ -389,20 +288,17 @@ def generate_sentiment(email_thread_id):
         email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
         prompt += email_entry
 
-    # Send the prompt to the LLM (replace ollama.chat with appropriate API)
     response = ollama.chat(
         model='llama3.2',
         messages=[{'role': 'user', 'content': prompt}],
     )
 
     print ("response",response['message']['content'].strip())
-    # Extract the numeric sentiment (between 1 and 10)
     try:
         polarity = int(response['message']['content'].strip())
     except ValueError:
         return jsonify({'error': 'Invalid response from the LLM. Expected a number.'}), 500
 
-    # Determine overall sentiment category based on polarity
     if polarity > 6:
         sentiment_category = "Positive"
     elif 3 < polarity <= 6:
@@ -412,13 +308,11 @@ def generate_sentiment(email_thread_id):
     else:
         sentiment_category = "Critical"
 
-    # Save the sentiment to the database (EmailThreadSentiment table)
     try:
         EmailThreadSentiment.save_sentiment(email_thread_id, sentiment_category)
     except ValueError as e:
         return jsonify({'error': str(e)}), 400
 
-    # Response body for UI with a normalized sentiment label
     sentiment_response = {
         'Positive': 'positive',
         'Critical': 'critical',
@@ -428,53 +322,6 @@ def generate_sentiment(email_thread_id):
 
     response = { 'overall_sentiment': sentiment_response }
     return jsonify(response), 200
-
-@app.route('/generate_customer_response', methods=['POST'])
-def generate_customer_response():
-    data = request.json
-    if not data or 'email_content' not in data:
-        return jsonify({'error': 'Request must contain email content'}), 400
-
-    customer_email_content = data['email_content']
-
-    # Read SOP PDF content
-    sop_path = './uploads/SOP.pdf'
-    try:
-        with open(sop_path, 'rb') as file:
-            reader = PyPDF2.PdfReader(file)
-            sop_content = " ".join([page.extract_text() for page in reader.pages])
-    except FileNotFoundError:
-        return jsonify({'error': 'SOP file not found'}), 404
-
-    # Create prompt with SOP and customer email content
-    prompt = f"""
-    Based on the following Standard Operating Procedure (SOP) and the email content from the customer, generate a customer support email response.
-
-    SOP:
-    {sop_content}
-
-    Customer Email:
-    {customer_email_content}
-
-    Please draft a response that addresses the customer's concerns while adhering to the SOP guidelines.
-    """
-
-    # Ollama API call for response generation
-    stream = ollama.chat(
-        model='llama3.2',
-        messages=[{'role': 'user', 'content': prompt}],
-        stream=True,
-    )
-
-    def generate_response():
-        first_chunk = True
-        for chunk in stream:
-            if not first_chunk:
-                yield ' '
-            yield chunk['message']['content']
-            first_chunk = False
-
-    return Response(stream_with_context(generate_response()), content_type='application/json')
 
 @app.post('/upload_sop_doc/')
 def store_sop_doc_to_db():
@@ -494,37 +341,26 @@ def store_sop_doc_to_db():
 
 def get_pdf_content_by_doc_id(doc_id):
     try:
-        # Query the database to get the document by doc_id
         sop_document = SOPDocument.query.filter_by(doc_id=doc_id).one()
-
-        # Read the PDF content from the binary data
         pdf_file = io.BytesIO(sop_document.doc_content)
         reader = PdfReader(pdf_file)
-        
-        # Extract text from all pages
         pdf_content = " ".join([page.extract_text() for page in reader.pages])
         return pdf_content
-
-    # except NoResultFound:
-    #     return jsonify({'error': 'Document not found with the provided doc_id'}), 404
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
-# 5. SBER-2 [ 30th Sept 2024 ]
-
-# Adding email to database based on thread id and document id (considering primary key)
-# Response body AI Team
-
 def gen_support_email(sop_content, emails):
     prompt = f"""
-    Based on the following Standard Operating Procedure (SOP) and the email content from the customer, generate a customer support email response.
-    Make sure to only generate the email content and nothing else.
     SOP:
     {sop_content}
-    Please draft a response that addresses the customer's concerns while adhering to the SOP guidelines.
-    Customer Email:
-
+   
+    You are a helpful assistant that generates responses based on company SOP guidelines.
+    Below are the emails asking about a specific process related to the company SOP.
+    generate a formal and professional response to this email, addressing each point appropriately.
+    Refer yourself as ABC support at the end of the mail.
+    Make sure to refer to the appropriate procedures mentioned in the subject and provide a comprehensive response,
+    including step-by-step guidelines, documentation, and any relevant timelines. Don't include the subject line in mail.
+    Email exchanges: 
     """
     for email in emails:
         sender = email.sender_email
@@ -533,7 +369,6 @@ def gen_support_email(sop_content, emails):
         email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
         prompt += email_entry
 
-    # Ollama API call for response generation
     response = ollama.chat(
         model='llama3.2',
         messages=[{'role': 'user', 'content': prompt}]
@@ -557,15 +392,16 @@ def background_task(thread_id, document_id):
         subject = email_thread.thread_topic
         content = gen_support_email(document, emails)
 
+        print ("got sop email response",content)
         new_email = Email(
-            sender_email="support@abc.com",
-            thread_id=thread_id,
-            email_subject=subject,
-            email_content=content,
-            sender_name="support",
-            receiver_email='alex@abc.com',
-            receiver_name='alex',
-            email_received_at=db.func.now()  # Set timestamp to now
+            sender_email = "support@abc.com",
+            thread_id = thread_id,
+            email_subject = subject,
+            email_content = content,
+            sender_name = "support",
+            receiver_email = "alex@abc.com",
+            receiver_name ='alex',
+            email_received_at = db.func.now()  # Set timestamp to now
         )
         db.session.add(new_email)
         db.session.commit()
@@ -576,14 +412,10 @@ def store_email_document():
     thread_id = data.get('thread_id')  # Fetching thread_id in JSON
     document_id = data.get('doc_id')  # Fetching document_id in JSON
 
-    # Check for valid thread_id and document_id
     if not thread_id or not document_id:
         return jsonify({'error': "Provide valid thread_id and document_id"}), 400
 
-    # Start the background task
     Thread(target=background_task, args=(thread_id, document_id)).start()
-
-    # Immediately respond with a 200 status
     return jsonify({'success': 'Processing started in background', 'thread_id': thread_id}), 200
 
 @app.route("/check_new_emails/<last_updated_timestamp>", methods=["GET"])
@@ -596,6 +428,5 @@ def check_new_emails(last_updated_timestamp):
             return get_all_threads()
     return jsonify([])
 
-# Run the application
 if __name__ == '__main__':
     app.run(debug=True,port=5001)

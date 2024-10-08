@@ -29,4 +29,12 @@ docker exec -it email_summarizer_db_v2 psql -U $DBUSERNAME -d $DBNAME -c "\i sch
 
 # Run the Python script
 echo "Running Python script..."
-python3 app.py
+python3 app.py &
+
+sleep 5
+
+curl --request POST \
+  --url http://localhost:5001/upload_sop_doc \
+  --header 'Content-Type: multipart/form-data' \
+  --header 'User-Agent: insomnia/10.0.0' \
+  --form file=@/home/user/Downloads/SOP.pdf

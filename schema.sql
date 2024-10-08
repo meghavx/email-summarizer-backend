@@ -13,7 +13,7 @@ CREATE TABLE emails (
 );
 
 CREATE TABLE threads (
-  thread_id serial PRIMARY KEY,
+  thread_id serial UNIQUE PRIMARY KEY,
   thread_topic VARCHAR(50),
   created_at timestamp DEFAULT now(),
   updated_at timestamp DEFAULT now()
@@ -40,6 +40,1292 @@ CREATE TABLE email_thread_sentiment (
   sentiments sentiment NOT NULL,
   timestamp TIMESTAMP DEFAULT NOW()
 );
+
+
+
+--SCRIPT UPDATE [4th Oct 2024]
+
+INSERT INTO emails (sender_email, sender_name, receiver_email, receiver_name, thread_id, email_received_at, email_subject, email_content)
+VALUES
+  -- Customer Expresses Frustration with Loyalty Program
+  ('customer8@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12388, '2024-08-19 10:30:00', 'Loyalty Program',
+   'Dear Support Team,
+      I am writing to express my dissatisfaction with your loyalty program. It has been quite underwhelming.'
+   || 'Here are my concerns:'
+   || '   - Limited rewards compared to competitors   
+          - Complicated redemption process   
+          - Lack of communication about points expiration'
+   || 'I expected much more from a loyalty program. Please address these issues promptly.
+     Best regards,
+     Alice Smith'),
+
+  -- Support Team Acknowledges Customer Concerns
+  ('support@retailer.com', 'Retail Support', 'customer8@example.com', 'Alice Smith', 12388, '2024-08-19 11:00:00', 'Loyalty Program',
+   'Dear Alice,
+       Thank you for reaching out and sharing your feedback regarding our loyalty program. We apologize for any inconvenience you have faced.'
+   || 'We value your opinion and are currently reviewing the loyalty program to enhance our customer experience.'
+   || 'Your concerns are important to us, and we will keep you updated on any improvements.
+      Best regards,
+      Retail Support Team'),
+
+  -- Customer Requests Specific Changes
+  ('customer8@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12388, '2024-08-19 11:30:00', 'Loyalty Program',
+   'Hi Support,
+       Thank you for acknowledging my concerns. However, I would like to see specific changes:'
+   || '   - Increase in reward points for purchases   
+          - Easier redemption options   
+          - Regular updates on loyalty status'
+   || 'If these changes are not made soon, I may reconsider my loyalty to your brand.
+      Thank you,
+      Alice Smith'),
+
+  -- Support Team Proposes a Survey
+  ('support@retailer.com', 'Retail Support', 'customer8@example.com', 'Alice Smith', 12388, '2024-08-19 12:00:00', 'Loyalty Program',
+   'Dear Alice,
+      We appreciate your suggestions for improving our loyalty program. To better understand customer needs, we are planning to conduct a survey.'
+   || 'We would love your participation in this survey to gather more insights. Your feedback will directly influence our program enhancements.'
+   || 'Thank you for your continued feedback.
+      Best regards,
+      Retail Support Team'),
+
+  -- Customer Expresses Skepticism
+  ('customer8@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12388, '2024-08-19 12:30:00', 'Loyalty Program',
+   'Hi Support,
+       While I appreciate the offer to participate in a survey, I am skeptical about whether any real changes will come from it.'
+   || 'I have seen similar surveys in the past without any follow-up. Please assure me that this feedback will be taken seriously.'
+   || 'Looking forward to your response,
+    Alice Smith'),
+
+  -- Support Team Addresses Skepticism
+  ('support@retailer.com', 'Retail Support', 'customer8@example.com', 'Alice Smith', 12388, '2024-08-19 13:00:00', 'Loyalty Program',
+   'Dear Alice,
+       We understand your skepticism and want to assure you that your feedback is taken seriously.'
+   || 'We are committed to implementing changes based on customer feedback, and we will keep you informed about the progress made.'
+   || 'Your input is invaluable, and we hope to regain your trust.
+      Best regards,
+      Retail Support Team'),
+
+  -- Customer Requests Timelines for Changes
+  ('customer8@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12388, '2024-08-19 13:30:00', 'Loyalty Program',
+   'Hi Support,I appreciate your response. However, I need a timeline for when these changes will be made.'
+   || 'Specific dates would help me feel more assured that my concerns are being prioritized.'
+   || 'Thank you for understanding,
+      Alice Smith'),
+
+  -- Support Team Provides Timeline
+  ('support@retailer.com', 'Retail Support', 'customer8@example.com', 'Alice Smith', 12388, '2024-08-19 14:00:00', 'Loyalty Program',
+   'Dear Alice,
+      Thank you for your patience. We aim to implement key changes to the loyalty program by September 15, 2024'
+   || 'We will communicate the specific enhancements through our website and email.'
+   || 'We appreciate your feedback and look forward to improving your experience.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Expresses Hope for Improvements
+  ('customer8@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12388, '2024-08-19 14:30:00', 'Loyalty Program',
+   'Hi Support,
+   Thank you for the timeline. I am hopeful that the upcoming changes will improve the program.'
+   || 'I look forward to seeing how my feedback has influenced your decisions.'
+   || 'Best,
+        Alice Smith'),
+
+  -- Support Team Sends Survey Link
+  ('support@retailer.com', 'Retail Support', 'customer8@example.com', 'Alice Smith', 12388, '2024-08-19 15:00:00', 'Loyalty Program',
+   'Dear Alice,We appreciate your engagement in this process. Here is the link to our survey: [Loyalty Program Survey].'
+   || 'Your input will be invaluable in shaping our future offerings. Thank you for your continued support.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Completes Survey
+  ('customer8@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12388, '2024-08-19 15:30:00', 'Loyalty Program',
+   'Hi Support,
+   I have completed the survey and provided my honest feedback. I hope it contributes to meaningful changes.'
+   || 'Please keep me updated on any decisions made based on this feedback.
+   Thank you,
+   Alice Smith'),
+
+  -- Support Team Thanks Customer for Feedback
+  ('support@retailer.com', 'Retail Support', 'customer8@example.com', 'Alice Smith', 12388, '2024-08-19 16:00:00', 'Loyalty Program',
+   'Dear Alice,
+   Thank you for completing the survey. We value your insights and will be reviewing all feedback collected.'
+   || 'Your participation is crucial to improving our loyalty program, and we will keep you informed of any updates.'
+   || 'Best regards,
+   Retail Support Team'),
+
+  -- Customer Seeks Assurance on Changes
+  ('customer8@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12388, '2024-08-19 16:30:00', 'Loyalty Program',
+   'Hi Support,
+   While I appreciate your acknowledgment, I want assurance that the changes will be significant.'
+   || 'I want to see more tangible benefits that reflect my loyalty to your brand.'
+   || 'Thank you,
+   Alice Smith'),
+
+  -- Support Team Reassures Customer
+  ('support@retailer.com', 'Retail Support', 'customer8@example.com', 'Alice Smith', 12388, '2024-08-19 17:00:00', 'Loyalty Program',
+   'Dear Alice,
+   We understand your desire for tangible changes. We are committed to enhancing the value of our loyalty program based on customer feedback.'
+   || 'We will be announcing exciting new benefits on September 15, 2024'
+   || 'Thank you for your loyalty and support as we work to improve your experience.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Acknowledges Support's Response
+  ('customer8@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12388, '2024-08-19 17:30:00', 'Loyalty Program',
+   'Hi Support,
+   Thank you for the update. I hope to see substantial changes that reflect our loyalty.'
+   || 'I look forward to your announcements on September 15'
+   || 'Best,
+   Alice Smith');
+
+
+
+INSERT INTO emails (sender_email, sender_name, receiver_email, receiver_name, thread_id, email_received_at, email_subject, email_content)
+VALUES
+  -- Customer Reports Delivery Issue
+  ('customer7@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12377, '2024-08-08 15:30:00', 'Order Not Delivered On Time',
+   'Dear Support Team,I am writing to express my extreme frustration regarding my recent order that has not been delivered on time.\n\n'
+   || 'Order Details:'
+   || '   - Order Number: 987654321   - Expected Delivery Date: August 6, 2024   - Current Status: Not Delivered'
+   || 'This delay is unacceptable. I expect a prompt response with a resolution.Best regards,John Doe'),
+
+  -- Support Team Acknowledges Delivery Issue
+  ('support@retailer.com', 'Retail Support', 'customer7@example.com', 'John Doe', 12377, '2024-08-08 16:00:00', 'Order Not Delivered On Time',
+   'Dear John,Thank you for reaching out regarding your order. We sincerely apologize for the inconvenience this delay has caused.'
+   || 'To assist you further, could you please provide the following:'
+   || '   - Confirmation of your shipping address   
+          - Any tracking information you may have received'
+   || 'We appreciate your patience as we investigate this issue.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Provides Shipping Address
+  ('customer7@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12377, '2024-08-08 16:30:00', 'Order Not Delivered On Time',
+   'Hi Support,I appreciate your prompt response, but this situation is still very concerning. Here’s my shipping address:'
+   || '   - 123 Elm St, Springfield, IL, 62701'
+   || 'I did not receive any tracking information either. This lack of communication is frustrating, and I need a resolution immediately.
+   Thank you,
+   John Doe'),
+
+  -- Support Team Requests Tracking Information
+  ('support@retailer.com', 'Retail Support', 'customer7@example.com', 'John Doe', 12377, '2024-08-08 17:00:00', 'Order Not Delivered On Time',
+   'Dear John,
+   Thank you for confirming your shipping address. We are currently looking into your order status.'
+   || 'Unfortunately, we do not have tracking information at the moment, but we are contacting the courier service to get updates.'
+   || 'We understand how important this order is to you and will keep you posted on any developments.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Expresses Discontent
+  ('customer7@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12377, '2024-08-08 17:30:00', 'Order Not Delivered On Time',
+   'Hi Support,This is becoming ridiculous. I expected much better service from your company.'
+   || 'The lack of tracking information is unacceptable. I have been left in the dark about my order.'
+   || 'Please escalate this issue to a manager and provide me with a detailed update as soon as possible.
+   Best,
+   John Doe'),
+
+  -- Support Team Escalates Issue
+  ('support@retailer.com', 'Retail Support', 'customer7@example.com', 'John Doe', 12377, '2024-08-08 18:00:00', 'Order Not Delivered On Time',
+   'Dear John,We sincerely apologize for the frustration this situation has caused. We are taking your concerns seriously.'
+   || 'Your case has been escalated to our management team, and we are actively working to resolve the delivery issue.'
+   || 'We appreciate your patience and will provide updates as soon as we have more information.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Requests Immediate Resolution
+  ('customer7@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12377, '2024-08-08 18:30:00', 'Order Not Delivered On Time',
+   'Hi Support,Thank you for escalating the issue. However, I cannot wait any longer.'
+   || 'I need an immediate resolution. If my order cannot be delivered today, I expect a full refund.'
+   || 'Please understand my frustration as I have made plans based on the expected delivery.
+   Best,
+   John Doe'),
+
+  -- Support Team Attempts Resolution
+  ('support@retailer.com', 'Retail Support', 'customer7@example.com', 'John Doe', 12377, '2024-08-08 19:00:00', 'Order Not Delivered On Time',
+   'Dear John,We completely understand your urgency, and we are doing everything we can to resolve this situation.'
+   || 'We are in contact with our shipping partners and will update you within the next hour.'
+   || 'Your satisfaction is our priority, and we will ensure this is handled appropriately.
+   Best regards, 
+   Retail Support Team'),
+
+  -- Customer Follows Up
+  ('customer7@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12377, '2024-08-08 20:00:00', 'Order Not Delivered On Time',
+   'Hi Support,It has been over an hour since your last message. I am still waiting for a resolution.'
+   || 'This situation is not acceptable, and I am losing confidence in your service.'
+   || 'I expect a timely response with a clear action plan on how you will resolve this issue. 
+   Best,
+   John Doe'),
+
+  -- Support Team Updates on Investigation
+  ('support@retailer.com', 'Retail Support', 'customer7@example.com', 'John Doe', 12377, '2024-08-08 21:00:00', 'Order Not Delivered On Time',
+   'Dear John,We apologize for the delay in communication. We are still in the process of resolving your delivery issue.'
+   || 'We have contacted our courier service and are waiting for a detailed update on your order.'
+   || 'We understand your frustration and appreciate your continued patience. We are committed to resolving this. 
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Expresses Anger
+  ('customer7@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12377, '2024-08-08 22:00:00', 'Order Not Delivered On Time',
+   'Hi Support,I am beyond frustrated at this point. Your responses feel automated and insincere.'
+   || 'I expected far more from your company. I will not hesitate to share my experience online if this is not resolved immediately.'
+   || 'I expect to hear back from you very soon.
+   Best,
+   John Doe'),
+
+  -- Support Team Provides Update
+  ('support@retailer.com', 'Retail Support', 'customer7@example.com', 'John Doe', 12377, '2024-08-08 22:30:00', 'Order Not Delivered On Time',
+   'Dear John,We are sincerely sorry for your experience and understand your anger. We take full responsibility for this issue.'
+   || 'We have confirmed that your order is delayed due to a shipping error on our end.'
+   || 'We are working on correcting this and will ensure your order is delivered by tomorrow at the latest.'
+   || 'Thank you for your understanding and patience as we rectify this situation.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Requests Confirmation
+  ('customer7@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12377, '2024-08-08 23:00:00', 'Order Not Delivered On Time',
+   'Hi Support,I appreciate the update, but I need written confirmation that my order will be delivered by tomorrow.'
+   || 'I cannot trust that it will happen without it. Please send me an email confirming this as soon as possible.'
+   || 'Thank you,
+   John Doe'),
+
+  -- Support Team Confirms Delivery
+  ('support@retailer.com', 'Retail Support', 'customer7@example.com', 'John Doe', 12377, '2024-08-08 23:30:00', 'Order Not Delivered On Time',
+   'Dear John,We confirm that your order will be delivered by August 9, 2024, before 5 PM'
+   || 'We are truly sorry for the inconvenience this has caused you, and we appreciate your understanding as we resolve the issue.'
+   || 'If you have any further questions or concerns, please do not hesitate to reach out.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Expresses Reluctant Acceptance
+  ('customer7@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12377, '2024-08-09 12:00:00', 'Order Not Delivered On Time',
+   'Hi Support,Thank you for the confirmation. I hope my order arrives as promised today'
+   || 'While I am relieved, I still feel that the entire process has been frustrating. I expect better next time.'
+   || '
+   Thank you,
+   John Doe');
+
+
+
+
+INSERT INTO emails (sender_email, sender_name, receiver_email, receiver_name, thread_id, email_received_at, email_subject, email_content)
+VALUES
+  -- Customer Reports Balance Issue
+  ('customer6@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12383, '2024-08-14 16:30:00', 'Gift Card Balance',
+   'Dear Support Team,I am writing to express my frustration regarding my gift card balance, which seems incorrect.'
+   || 'Here’s what I have observed:'
+   || '- The gift card was for $100.   
+   - I have made purchases totaling $30.   
+   - My balance should be $70, but it shows $50.'
+   || 'This is unacceptable, and I expect a prompt resolution.
+   Best regards,
+   Alice Smith'),
+
+  -- Support Team Acknowledges Issue
+  ('support@retailer.com', 'Retail Support', 'customer6@example.com', 'Alice Smith', 12383, '2024-08-14 17:00:00', 'Gift Card Balance',
+   'Dear Alice,Thank you for contacting us about your gift card balance. We apologize for any confusion this has caused.'
+   || 'To assist you better, please provide the following:'
+   || '- The gift card number   
+   - Details of recent transactions made with the gift card'
+   || 'We appreciate your cooperation and will work to resolve this issue promptly.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Provides Details
+  ('customer6@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12383, '2024-08-14 17:30:00', 'Gift Card Balance',
+   'Hi Support,I appreciate your quick response. Here are the details you requested:'
+   || '- Gift Card Number: 1234-5678-9012   - Recent Transactions:'
+   || '- Purchase 1: $20 on August 10'
+   || '- Purchase 2: $10 on August 12'
+   || 'This should total $30, and I should have a balance of $70. Please investigate this issue further.Thank you! 
+   Best,
+   Alice Smith'),
+
+  -- Support Team Requests More Information
+  ('support@retailer.com', 'Retail Support', 'customer6@example.com', 'Alice Smith', 12383, '2024-08-14 18:00:00', 'Gift Card Balance',
+   'Dear Alice,Thank you for the information provided.'
+   || 'To clarify the situation further, we need:'
+   || '- Confirmation of any purchases made outside of this gift card   
+   - Screenshots of your balance shown on your account'
+   || 'This will help us expedite our investigation. Thank you for your patience!
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Provides Additional Information
+  ('customer6@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12383, '2024-08-14 18:30:00', 'Gift Card Balance',
+   'Hi Support,I do not have any other purchases made outside of this gift card. All transactions were exclusively from it.'
+   || 'Attached are the screenshots of my account balance showing $50.'
+   || 'I expect this matter to be resolved swiftly, as I rely on this gift card for my purchases.Thank you for your attention!
+   Best,
+   Alice Smith'),
+
+  -- Support Team Investigates Issue
+  ('support@retailer.com', 'Retail Support', 'customer6@example.com', 'Alice Smith', 12383, '2024-08-14 19:00:00', 'Gift Card Balance',
+   'Dear Alice,We have received your screenshots and appreciate your detailed response.'
+   || 'Our team is currently investigating the discrepancy in your gift card balance. We aim to resolve this issue as quickly as possible.'
+   || 'In the meantime, if you have any further questions, please do not hesitate to reach out.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Checks In on Status
+  ('customer6@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12383, '2024-08-15 10:00:00', 'Gift Card Balance',
+   'Hi Support,I wanted to check in regarding my gift card balance issue. It’s been over a day, and I have yet to receive any updates.'
+   || 'As a reminder:   - Gift Card Number: 1234-5678-9012   - Expected Balance: $70'
+   || 'I would appreciate any information you have on this matter.Thank you!
+   Best,
+   Alice Smith'),
+
+  -- Support Team Provides an Update
+  ('support@retailer.com', 'Retail Support', 'customer6@example.com', 'Alice Smith', 12383, '2024-08-15 11:00:00', 'Gift Card Balance',
+   'Dear Alice,Thank you for your patience. We are still investigating your balance discrepancy.'
+   || 'To help with the resolution, we are reaching out to our transactions department to verify your activity.'
+   || 'We understand this may be frustrating and appreciate your understanding as we work to resolve this matter.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Expresses Continued Concern
+  ('customer6@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12383, '2024-08-15 12:00:00', 'Gift Card Balance',
+   'Hi Support,I understand these things take time, but I’m becoming increasingly concerned.'
+   || 'The gift card is for an upcoming event, and I need to use it soon.'
+   || 'Please expedite this process and keep me updated.Thank you!
+   Best,
+   Alice Smith'),
+
+  -- Support Team Assures Customer
+  ('support@retailer.com', 'Retail Support', 'customer6@example.com', 'Alice Smith', 12383, '2024-08-15 12:30:00', 'Gift Card Balance',
+   'Dear Alice,We completely understand your concern, and we assure you that we are prioritizing your case.'
+   || 'We are in contact with the transactions department and will provide you with an update shortly'
+   || 'Thank you for your continued patience.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Responds with Urgency
+  ('customer6@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12383, '2024-08-15 13:00:00', 'Gift Card Balance',
+   'Hi Support,I really need this sorted out by the end of today.'
+   || 'I have made plans to use the gift card, and I can’t do that if the balance is incorrect. Please treat this as urgent!'
+   || 'Thank you for your help.
+   Best,
+   Alice Smith');
+
+
+ 
+
+
+INSERT INTO emails (sender_email, sender_name, receiver_email, receiver_name, thread_id, email_received_at, email_subject, email_content)
+VALUES
+  -- Customer Reports Damage
+  ('customer5@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12376, '2024-08-07 09:30:00', 'Damaged Product',
+   'Dear Support Team,I am writing to report an issue with my recent order (Order #456123), which arrived today and is unfortunately damaged.'
+   || 'Here’s what I noticed:'
+   || '- The item is scratched all over.   
+   - There are noticeable dents on one side.   
+   - The packaging was inadequate, with no protective materials inside.'
+   || 'I am very disappointed, as I expected better quality. Please let me know how to resolve this issue promptly.
+   Best regards,
+   John Doe'),
+
+  -- Support Team Acknowledges Report
+  ('support@retailer.com', 'Retail Support', 'customer5@example.com', 'John Doe', 12376, '2024-08-07 10:00:00', 'Damaged Product',
+   'Dear John,Thank you for reaching out to us regarding the damage to your order. We apologize for the inconvenience this has caused.'
+   || 'To assist you better, could you please provide:'
+   || '- Photos of the damage   
+   - Details of the packaging condition upon arrival'
+   || 'We appreciate your cooperation and will work to resolve this matter quickly.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Provides Damage Details
+  ('customer5@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12376, '2024-08-07 10:30:00', 'Damaged Product',
+   'Hi Support,Attached are the photos showing the damages to the product and the poor condition of the packaging.'
+   || 'Here’s a brief summary of what I experienced:'
+   || '- The item should have been properly packaged to avoid this.   
+   - I expect a solution soon as this is unacceptable.'
+   || 'Please advise on the next steps.
+   Best,
+   John Doe'),
+
+  -- Support Team Requests Additional Information
+  ('support@retailer.com', 'Retail Support', 'customer5@example.com', 'John Doe', 12376, '2024-08-07 11:00:00', 'Damaged Product',
+   'Dear John,Thank you for the prompt response and for providing the images.'
+   || 'We understand your frustration and would like to resolve this issue as quickly as possible.'
+   || 'Could you please confirm:'
+   || '- The date of purchase   
+   - Your preferred resolution (refund or replacement)'
+   || 'We look forward to your reply.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Chooses Replacement
+  ('customer5@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12376, '2024-08-07 11:30:00', 'Damaged Product',
+   'Hi Support,I purchased the product on August 1, 2024, and I would prefer a replacement.'
+   || 'I hope this one will be shipped with better packaging to prevent further damage. I am very frustrated with this experience.'
+   || 'Please expedite this process, as I need the product urgently!
+   Best,
+   John Doe'),
+
+  -- Support Team Confirms Replacement Request
+  ('support@retailer.com', 'Retail Support', 'customer5@example.com', 'John Doe', 12376, '2024-08-07 12:00:00', 'Damaged Product',
+   'Dear John,Your request for a replacement has been processed, and we will ensure that it is packaged securely this time.'
+   || 'The replacement will ship within 1-2 business days, and we will provide you with tracking information once it’s on its way.'
+   || 'Thank you for your patience in this matter. We are here to help!
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Expresses Continued Frustration
+  ('customer5@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12376, '2024-08-07 12:30:00', 'Damaged Product',
+   'Hi Support,I appreciate the quick response, but I must emphasize how dissatisfied I am with this situation.'
+   || 'I expect the replacement to be of better quality and that proper packaging will be used. This has been a hassle, and it shouldn’t have been.'
+   || 'Please keep me updated on the shipping process. Thank you!
+   Best,
+   John Doe'),
+
+  -- Support Team Apologizes Again
+  ('support@retailer.com', 'Retail Support', 'customer5@example.com', 'John Doe', 12376, '2024-08-07 13:00:00', 'Damaged Product',
+   'Dear John,We sincerely apologize for the inconvenience this has caused you. Your feedback is important to us, and we will use it to improve our service.'
+   || 'We will monitor your replacement order closely and ensure that it is shipped correctly this time.'
+   || 'Thank you for your understanding.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Inquires About Shipping
+  ('customer5@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12376, '2024-08-07 13:30:00', 'Damaged Product',
+   'Hi Support,Can you provide me with a more specific timeline on when I can expect my replacement to ship?'
+   || 'I am concerned because of the delays I’ve already faced. It’s critical for me to have this resolved soon.'
+   || 'Thank you for your attention to this matter!
+   Best,
+   John Doe'),
+
+  -- Support Team Provides Shipping Update
+  ('support@retailer.com', 'Retail Support', 'customer5@example.com', 'John Doe', 12376, '2024-08-07 14:00:00', 'Damaged Product',
+   'Dear John, We are currently processing your replacement order. It is scheduled to ship on August 9, 2024.'
+   || 'Once shipped, you will receive tracking information so you can monitor its progress.'
+   || 'We appreciate your patience during this process!
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Expresses Doubts
+  ('customer5@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12376, '2024-08-07 14:30:00', 'Damaged Product',
+   'Hi Support,I appreciate the update, but I must say I’m skeptical about the replacement arriving in good condition.'
+   || 'Given my recent experience, I’ll be keeping a close eye on the shipment.'
+   || 'Let’s hope for the best!
+   Best,
+   John Doe'),
+
+  -- Support Team Reassures Customer
+  ('support@retailer.com', 'Retail Support', 'customer5@example.com', 'John Doe', 12376, '2024-08-08 09:00:00', 'Damaged Product',
+   'Dear John,We understand your skepticism, and we’re committed to ensuring your next experience is better.'
+   || 'If there are any issues with the replacement, please reach out immediately. We will take immediate action to resolve any concerns.'
+   || 'Thank you for your understanding.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Urges for Resolution
+  ('customer5@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12376, '2024-08-08 09:30:00', 'Damaged Product',
+   'Hi Support,I just want to emphasize how critical it is for me to receive a product that is in perfect condition.'
+   || 'After everything I’ve gone through, I need assurance that this will be resolved without any further issues.'
+   || 'Thank you for taking this seriously!
+   Best,
+   John Doe'),
+
+  -- Support Team Assures Final Checks
+  ('support@retailer.com', 'Retail Support', 'customer5@example.com', 'John Doe', 12376, '2024-08-08 10:00:00', 'Damaged Product',
+   'Dear John,We appreciate your patience and assure you that we will conduct a final quality check before shipping your replacement.'
+   || 'Our goal is to provide you with a product that meets your expectations, and we’re dedicated to making this right.'
+   || 'Thank you for allowing us the opportunity to rectify this situation.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Requests Compensation
+  ('customer5@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12376, '2024-08-09 09:15:00', 'Damaged Product',
+   'Hi Support,Given the trouble I’ve had with my order, I believe compensation is warranted.'
+   || 'I have experienced significant inconvenience, and I expect to be compensated for the damages.'
+   || 'Please let me know how you plan to address this.
+   Best,
+   John Doe'),
+
+  -- Support Team Offers Apology and Compensation
+  ('support@retailer.com', 'Retail Support', 'customer5@example.com', 'John Doe', 12376, '2024-08-09 09:30:00', 'Damaged Product',
+   'Dear John,We apologize for the inconvenience caused by the damaged product, and we appreciate your feedback'
+   || 'As a gesture of goodwill, we are offering you a 15% discount on your next purchase.'
+   || 'We hope this can help to mitigate the frustration you have faced, and we’re here to support you moving forward.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Rejects Offer
+  ('customer5@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12376, '2024-08-09 10:00:00', 'Damaged Product',
+   'Hi Support,I appreciate the offer, but it doesn’t really compensate for the hassle I have experienced.'
+   || 'I just want a product that isn’t damaged, and I expect better service next time.'
+   || 'Please ensure this replacement arrives without any issues, or I will have to escalate this further.
+   Best,
+   John Doe'),
+
+  -- Support Team Final Response
+  ('support@retailer.com', 'Retail Support', 'customer5@example.com', 'John Doe', 12376, '2024-08-09 10:30:00', 'Damaged Product',
+   'Dear John,We understand your frustration and assure you that we are taking your concerns seriously.'
+   || 'Your replacement is our top priority, and we will ensure it is packaged securely. 
+       If there are any further issues, please do not hesitate to escalate.'
+   || 'Thank you for your continued patience, and we hope to restore your faith in our service.
+   Best regards,
+   Retail Support Team');
+
+
+
+
+INSERT INTO emails (sender_email, sender_name, receiver_email, receiver_name, thread_id, email_received_at, email_subject, email_content)
+VALUES
+  -- Customer Reports Defect
+  ('customer4@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12375, '2024-08-06 12:35:00', 'Product Defect',
+   'Dear Support Team,I am writing to express my frustration regarding a product I purchased (Order #789654).'
+   || 'The item has several defects that have made it unusable, including:'
+   || '- Cracked screen   - Faulty battery   - Missing charger'
+   || 'I expected better quality, and I’m highly disappointed. Please let me know how to proceed.
+   Best,
+   Alice Smith'),
+
+  -- Support Team Acknowledges Defect
+  ('support@retailer.com', 'Retail Support', 'customer4@example.com', 'Alice Smith', 12375, '2024-08-06 12:45:00', 'Product Defect',
+   'Dear Alice,Thank you for bringing this to our attention. We apologize for the inconvenience caused by the defective product.'
+   || 'To help you resolve this issue, please provide the following details:'
+   || ' - Photos of the defects   - Description of the issues'
+   || 'We want to ensure you receive a satisfactory resolution.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Provides Details
+  ('customer4@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12375, '2024-08-06 13:00:00', 'Product Defect',
+   'Hi Support,Here are the requested details for the defective product:'
+   || '- Attached photos showing the cracks and defects.   - The product stopped functioning properly within a week of purchase.'
+   || 'It’s frustrating to deal with such issues right after purchasing. What are my options for a replacement or refund?
+   Best,
+   Alice Smith'),
+
+  -- Support Team Requests More Information
+  ('support@retailer.com', 'Retail Support', 'customer4@example.com', 'Alice Smith', 12375, '2024-08-06 13:30:00', 'Product Defect',
+   'Dear Alice,Thank you for the photos and details. We understand your frustration.'
+   || 'In order to process your request, could you please confirm the following:'
+   || '- Purchase date   - Store or website where it was bought'
+   || 'Once we have this information, we will expedite your request.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Provides Purchase Information
+  ('customer4@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12375, '2024-08-06 14:00:00', 'Product Defect',
+   'Hi Support,I purchased the product on July 25, 2024, from your website.'
+   || 'I expected a better experience, especially considering the price I paid. What’s taking so long?'
+   || 'Please process my request as soon as possible!
+   Best,
+   Alice Smith'),
+
+  -- Support Team Apologizes for Delay
+  ('support@retailer.com', 'Retail Support', 'customer4@example.com', 'Alice Smith', 12375, '2024-08-06 14:30:00', 'Product Defect',
+   'Dear Alice,We sincerely apologize for the delay in processing your request. Your concerns are important to us.'
+   || 'Here’s what will happen next:'
+   || '- We will escalate your case to our quality control team.   - You should receive an update within 48 hours.'
+   || 'Thank you for your patience!
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Expresses Frustration
+  ('customer4@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12375, '2024-08-06 15:00:00', 'Product Defect',
+   'Hi Support,48 hours for an update? That’s wonderful customer service!'
+   || 'In the meantime, here are my thoughts:'
+   || '- I can’t believe I have to wait this long for a product I paid good money for.   - Should I just buy another one?'
+   || 'This has been quite the experience, but I guess I’m getting used to it!
+   Best,
+   Alice Smith'),
+
+  -- Support Team Provides Update
+  ('support@retailer.com', 'Retail Support', 'customer4@example.com', 'Alice Smith', 12375, '2024-08-06 15:30:00', 'Product Defect',
+   'Dear Alice,Thank you for your understanding. We have received an update from our quality control team.'
+   || 'Unfortunately, the item is classified as defective and is eligible for a refund or exchange. Here’s what we can do:'
+   || ' - Full refund to your original payment method.   - Replacement with a new item'
+   || 'Please let us know which option you prefer.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Chooses Replacement
+  ('customer4@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12375, '2024-08-06 16:00:00', 'Product Defect',
+   'Hi Support,I’ll take the replacement, but I must say this process has been exhausting.'
+   || 'I hope the new item works as it should because I really don’t want to go through this again.'
+   || 'Please expedite the shipping!
+   Best,
+   Alice Smith'),
+
+  -- Support Team Confirms Replacement Order
+  ('support@retailer.com', 'Retail Support', 'customer4@example.com', 'Alice Smith', 12375, '2024-08-06 16:30:00', 'Product Defect',
+   'Dear Alice,Your replacement has been ordered and is set to ship within 2-3 business days.'
+   || 'We’ll send you tracking information as soon as it’s shipped. Thank you for your patience during this process.'
+   || 'We value your feedback and hope to provide a better experience next time!
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Expresses Skepticism
+  ('customer4@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12375, '2024-08-07 09:00:00', 'Product Defect',
+   'Hi Support,Great, a replacement is on the way!'
+   || 'Just to clarify:'
+   || '- I hope this one isn’t also defective.   - Should I be prepared for another wait?'
+   || 'I’ll keep my fingers crossed, but I’m not holding my breath!
+   Best,
+   Alice Smith'),
+
+  -- Support Team Provides Assurance
+  ('support@retailer.com', 'Retail Support', 'customer4@example.com', 'Alice Smith', 12375, '2024-08-07 09:30:00', 'Product Defect',
+   'Dear Alice,We assure you that we will closely monitor the replacement process.'
+   || 'We are committed to improving our service, and your feedback is invaluable.'
+   || 'If you have any further questions or concerns, please reach out anytime.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Comments on Process
+  ('customer4@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12375, '2024-08-08 10:00:00', 'Product Defect',
+   'Hi Support,Thank you for the reassurance!'
+   || 'I’ll say this, though: I never expected to become an expert on product defects.'
+   || 'If only there was a certification for it!
+   Best,
+   Alice Smith'),
+
+  -- Support Team Responds Lightly
+  ('support@retailer.com', 'Retail Support', 'customer4@example.com', 'Alice Smith', 12375, '2024-08-08 10:30:00', 'Product Defect',
+   'Dear Alice,We appreciate your sense of humor in this situation!'
+   || 'Rest assured, we’re doing our best to prevent future defects. Your experience is helping us improve.'
+   || 'Thanks for bearing with us!
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Final Response with Sarcasm
+  ('customer4@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12375, '2024-08-09 11:00:00', 'Product Defect',
+   'Hi Support,I received the replacement today, and guess what?'
+   || 'It works perfectly! Hooray!'
+   || 'I’ll be sure to recommend your store to my friends—just make sure they know about the quality they might get.'
+   || 'Thank you for the journey, it was truly enlightening!
+   Best,
+   Alice Smith');
+
+
+
+
+
+INSERT INTO emails (sender_email, sender_name, receiver_email, receiver_name, thread_id, email_received_at, email_subject, email_content)
+VALUES
+  -- Customer Initiates Exchange Request
+  ('customer3@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12374, '2024-08-05 16:50:00', 'Exchange Process',
+   'Dear Support Team,I am reaching out to request an exchange for an item I purchased recently (Order #456123).'
+   || 'The product arrived faulty, and I’m quite disappointed as I was looking forward to using it. Here are the details:'
+   || '- Item: Bluetooth Headphones   - Issue: Not charging'
+   || 'Please let me know how to proceed with the exchange process.
+   Thank you,
+   John Doe'),
+
+  -- Support Team Acknowledges Request
+  ('support@retailer.com', 'Retail Support', 'customer3@example.com', 'John Doe', 12374, '2024-08-05 17:00:00', 'Exchange Process',
+   'Dear John,Thank you for contacting us regarding your exchange request for Order #456123.'
+   || 'We apologize for the inconvenience caused by the faulty product. To assist you better, please provide us with the following:'
+   || '- Photo of the defective item   - Any additional comments regarding the issue'
+   || 'Once we receive this information, we will initiate the exchange process.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Provides Details for Exchange
+  ('customer3@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12374, '2024-08-05 17:15:00', 'Exchange Process',
+   'Hi Support,Thank you for your quick response! I’ve attached a photo of the faulty Bluetooth headphones for your review.'
+   || 'I would appreciate a swift resolution, as I was looking forward to using them during my travels next week.'
+   || 'Thank you for your assistance!
+   Best,
+   John Doe'),
+
+  -- Support Team Reviews Details
+  ('support@retailer.com', 'Retail Support', 'customer3@example.com', 'John Doe', 12374, '2024-08-05 17:30:00', 'Exchange Process',
+   'Dear John,We have received the photo and your comments. Thank you for providing this information.'
+   || 'We will initiate the exchange process immediately. Here’s what will happen next:'
+   || '- We will send you a prepaid shipping label to return the faulty item.  - Once we receive the item, we will ship the replacement to you.'
+   || 'Thank you for your patience in this matter.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Requests Shipping Label
+  ('customer3@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12374, '2024-08-05 18:00:00', 'Exchange Process',
+   'Hi Support,I appreciate your assistance. When can I expect to receive the prepaid shipping label to return the faulty headphones?'
+   || 'I want to ensure that the replacement arrives before my travels next week.
+   Thank you,
+   John Doe'),
+
+  -- Support Team Sends Shipping Label
+  ('support@retailer.com', 'Retail Support', 'customer3@example.com', 'John Doe', 12374, '2024-08-05 18:15:00', 'Exchange Process',
+   'Dear John,Attached to this email, you will find the prepaid shipping label for returning the faulty Bluetooth headphones.'
+   || 'Please follow these steps to return the item:'
+   || '1. Print the attached label.   2. Pack the item securely.   3. Affix the label to the package.   4. Drop it off at the nearest shipping location.'
+   || 'Once we receive the item, we will expedite the shipment of your replacement.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Confirms Shipment
+  ('customer3@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12374, '2024-08-06 09:00:00', 'Exchange Process',
+   'Hi Support,I have shipped the faulty headphones using the label you provided. I will send you the tracking number shortly.'
+   || 'Thank you for your help in this process!
+   Best,
+   John Doe'),
+
+  -- Support Team Acknowledges Shipment
+  ('support@retailer.com', 'Retail Support', 'customer3@example.com', 'John Doe', 12374, '2024-08-06 09:30:00', 'Exchange Process',
+   'Dear John,Thank you for confirming the shipment of the faulty headphones. Please share the tracking number so we can monitor the return.'
+   || 'As soon as we receive the item, we will dispatch your replacement. Thank you for your cooperation!
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Provides Tracking Information
+  ('customer3@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12374, '2024-08-06 10:00:00', 'Exchange Process',
+   'Hi Support,Here’s the tracking number for the return shipment: TRACK123456.'
+   || 'I appreciate your quick responses throughout this process.
+   Thank you,
+   John Doe'),
+
+  -- Support Team Confirms Receipt of Return
+  ('support@retailer.com', 'Retail Support', 'customer3@example.com', 'John Doe', 12374, '2024-08-06 10:30:00', 'Exchange Process',
+   'Dear John,We have received the return shipment and are currently processing your exchange request.'
+   || 'Your replacement Bluetooth headphones will be shipped within the next 2-3 business days.Thank you for your patience!
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Inquires About Replacement Shipment
+  ('customer3@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12374, '2024-08-08 11:00:00', 'Exchange Process',
+   'Hi Support,I wanted to follow up on my exchange request. When can I expect the replacement headphones to be shipped?'
+   || 'I appreciate your help with this matter.
+   Thank you,
+   John Doe'),
+
+  -- Support Team Provides Shipping Update
+  ('support@retailer.com', 'Retail Support', 'customer3@example.com', 'John Doe', 12374, '2024-08-08 11:30:00', 'Exchange Process',
+   'Dear John,Your replacement Bluetooth headphones are scheduled to ship by the end of today.'
+   || 'You will receive a confirmation email with tracking information as soon as they are on their way to you.'
+   || 'Thank you for your continued patience!
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Receives Confirmation of Replacement Shipment
+  ('customer3@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12374, '2024-08-09 09:00:00', 'Exchange Process',
+   'Hi Support,I just received the email confirming that my replacement headphones have been shipped. Thank you for resolving this issue!'
+   || 'I look forward to receiving them soon.
+   Best,
+   John Doe'),
+
+  -- Support Team Acknowledges Final Steps
+  ('support@retailer.com', 'Retail Support', 'customer3@example.com', 'John Doe', 12374, '2024-08-09 09:30:00', 'Exchange Process',
+   'Dear John,We are glad to hear that your replacement headphones are on the way!'
+   || 'If you have any further questions or concerns, feel free to reach out. We are here to help!
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Expresses Gratitude
+  ('customer3@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12374, '2024-08-09 10:00:00', 'Exchange Process',
+   'Hi Support,I wanted to take a moment to thank you for your help throughout this process. I really appreciate your support in resolving my issue.'
+   || 'Looking forward to receiving the replacement headphones!
+   Best,
+   John Doe'),
+
+  -- Support Team Thanks Customer
+  ('support@retailer.com', 'Retail Support', 'customer3@example.com', 'John Doe', 12374, '2024-08-09 10:30:00', 'Exchange Process',
+   'Dear John,Thank you for your kind words! We strive to provide the best support possible.'
+   || 'If you have any more questions in the future, please don’t hesitate to reach out.
+   Best regards,
+   Retail Support Team');
+
+
+
+
+
+
+INSERT INTO emails (sender_email, sender_name, receiver_email, receiver_name, thread_id, email_received_at, email_subject, email_content)
+VALUES
+  -- Initial Request from Customer
+  ('customer2@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12373, '2024-08-04 14:10:00', 'Request for Order Cancellation',
+   'Dear Support Team,I am writing to request the cancellation of my recent order (#789456). '
+   || 'I made the order just two days ago, but due to unforeseen circumstances, I no longer need the items.'
+   || 'Please confirm the cancellation and any steps I need to follow.
+   Thank you,
+   Alice Smith'),
+
+  -- Support Team Acknowledges Request
+  ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Alice Smith', 12373, '2024-08-04 14:15:00', 'Request for Order Cancellation',
+   'Dear Alice,Thank you for reaching out. We understand your request for cancellation of order #789456.'
+   || 'To ensure we handle this promptly, could you please confirm the following?   
+   - Order Number   
+   - Reason for Cancellation'
+   || 'Once we receive this information, we will process your cancellation right away.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Clarifies Cancellation Details
+  ('customer2@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12373, '2024-08-04 14:20:00', 'Request for Order Cancellation',
+   'Hi Support,Thank you for your prompt response. Here are the details you requested:'
+   || '- Order Number: #789456   
+   - Reason: Change of mind due to personal reasons.'
+   || 'I appreciate your help in processing this cancellation quickly.
+   Best,
+   Alice Smith'),
+
+  -- Support Team Confirms Cancellation Process
+  ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Alice Smith', 12373, '2024-08-04 14:30:00', 'Request for Order Cancellation',
+   'Dear Alice,We have received your cancellation request and the details provided. '
+   || 'Your order (#789456) is currently being processed for cancellation. We expect it to be finalized within the next 24 hours.'
+   || 'Thank you for your patience during this process.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Checks on Cancellation Status
+  ('customer2@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12373, '2024-08-05 10:05:00', 'Request for Order Cancellation',
+   'Hi Support,I wanted to follow up on my cancellation request for order #789456. It has been over 24 hours, and I haven’t received a confirmation yet.'
+   || 'Could you please provide me with an update? I would like to ensure everything is on track.
+   Thank you,
+   Alice Smith'),
+
+  -- Support Team Apologizes for Delay
+  ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Alice Smith', 12373, '2024-08-05 10:30:00', 'Request for Order Cancellation',
+   'Dear Alice,We apologize for the delay in confirming your cancellation. There was a temporary system glitch, but we have resolved it now.'
+   || 'I’m pleased to inform you that your order (#789456) has been successfully canceled. You should receive a confirmation email shortly.'
+   || 'Thank you for your understanding, and we appreciate your patience.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Acknowledges Cancellation
+  ('customer2@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12373, '2024-08-05 11:00:00', 'Request for Order Cancellation',
+   'Hi,Thank you for the quick resolution! I received the cancellation confirmation, and I appreciate your prompt assistance in this matter.'
+   || 'I’ll consider shopping with you again in the future based on how efficiently this was handled.
+   Best,
+   Alice Smith'),
+
+  -- Support Team Thanks Customer
+  ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Alice Smith', 12373, '2024-08-05 11:15:00', 'Request for Order Cancellation',
+   'Dear Alice,Thank you for your understanding and kind words! We strive to provide the best service possible.'
+   || 'If you have any further questions or need assistance with anything else, please feel free to reach out.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Inquires About Future Orders
+  ('customer2@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12373, '2024-08-06 09:30:00', 'Request for Order Cancellation',
+   'Hi Support,I have another question regarding future orders. I’m considering placing a new order soon but would like to know if you have any promotions available right now.'
+   || 'Thank you for your help!
+   Best,
+   Alice Smith'),
+
+  -- Support Team Responds with Promotions
+  ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Alice Smith', 12373, '2024-08-06 10:00:00', 'Request for Order Cancellation',
+   'Dear Alice,Thank you for your interest in placing a new order! Currently, we have several promotions running:'
+   || '- 10% off on your first order   - Free shipping on orders over $50   - Buy one get one 50% off on selected items'
+   || 'We’d love to assist you with your next purchase!
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Expresses Interest in Promotion
+  ('customer2@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12373, '2024-08-06 11:30:00', 'Request for Order Cancellation',
+   'Hi Support,Thank you for sharing the promotions! I’m interested in the buy one get one 50% off offer.'
+   || 'I’d like to know which items are eligible and if I can combine this with the free shipping offer as well.
+   Best,
+   Alice Smith'),
+
+  -- Support Team Clarifies Promotion Details
+  ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Alice Smith', 12373, '2024-08-06 12:00:00', 'Request for Order Cancellation',
+   'Dear Alice,I’m glad to hear you’re interested in our promotions! The eligible items for the buy one get one 50% off offer are:'
+   || ' - Item A   || - Item B  || - Item C'
+   || 'Yes, you can absolutely combine this offer with free shipping on orders over $50.'
+   || 'If you need any further assistance or wish to place your order, please let me know!
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Places New Order
+  ('customer2@example.com', 'Alice Smith', 'support@retailer.com', 'Retail Support', 12373, '2024-08-07 14:00:00', 'Request for Order Cancellation',
+   'Hi Support,I’d like to proceed with placing a new order including Item A and Item B. '
+   || 'Please apply the buy one get one 50% off promotion along with the free shipping offer to my order.'
+   || 'Thank you for all your assistance! Looking forward to your confirmation.
+   Best,
+   Alice Smith'),
+
+  -- Support Team Confirms New Order
+  ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Alice Smith', 12373, '2024-08-07 14:30:00', 'Request for Order Cancellation',
+   'Dear Alice,Thank you for your order! We have successfully placed your order for Item A and Item B with the applied promotions.'
+   || 'Order Summary:  
+    - Item A: $5.0  
+     - Item B: $3.8   
+     - Discount: 50%  
+     - Shipping: Free'
+   || 'Your order will be shipped within the next 2-3 business days, and you will receive a confirmation email shortly.'
+   || 'We appreciate your business and look forward to serving you again!
+   Best regards,
+   Retail Support Team');
+
+
+INSERT INTO emails (sender_email, sender_name, receiver_email, receiver_name, thread_id, email_received_at, email_subject, email_content)
+VALUES
+  ('customer@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12394, '2024-08-25 12:00:00', 'Customer Complaint: Incorrect Item Received', 
+   'Hi,I recently received my order, but unfortunately, the item I got was incorrect. Instead of the jacket I ordered, I received a pair of shoes. '
+   || 'This has caused some inconvenience, and I would like to resolve this as quickly as possible.Could you please assist me with the following:'
+   || '- Initiating a return process for the incorrect item'
+   || '- Ensuring I receive the correct item (the jacket)'
+   || 'Thank you for your prompt assistance.
+   Best regards,
+   John Doe'),
+
+  ('support@retailer.com', 'Retail Support', 'customer@example.com', 'John Doe', 12394, '2024-08-25 14:10:00', 'Customer Complaint: Incorrect Item Received', 
+   'Dear John,We apologize for the inconvenience caused by this error. We strive to ensure accurate orders, and we regret that this mistake occurred. '
+   || 'In order to help resolve this as quickly as possible, please provide us with the following information:'
+   || '- Your order number'
+   || '- The SKU or product code of the item you received'
+   || 'Once we have this information, we can initiate the return process and send you the correct item.'
+   || 'Thank you for your patience, and we look forward to resolving this for you soon.
+   Best regards,
+   Retail Support Team'),
+
+  ('customer@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12394, '2024-08-25 15:45:00', 'Customer Complaint: Incorrect Item Received', 
+   'Hello,Thank you for your quick response. Here are the details you requested:'
+   || '- Order number: 5678'
+   || '- SKU of the incorrect item: SH12345 (Shoes)'
+   || 'The item I ordered was a leather jacket, SKU: JK56789. I appreciate your help in sorting this out.'
+   || 'Could you also let me know how long the return and replacement process will take?'
+   || 'Best regards,
+   John Doe'),
+
+  ('support@retailer.com', 'Retail Support', 'customer@example.com', 'John Doe', 12394, '2024-08-25 17:30:00', 'Customer Complaint: Incorrect Item Received', 
+   'Dear John,Thank you for providing the details. We have initiated the return process, and you will receive a prepaid shipping label via email '
+   || 'shortly. Once you receive it, please return the incorrect item (the shoes), and we will process the shipment of the correct item (the jacket).'
+   || 'Here’s what will happen next:'
+   || '- We will email you the shipping label within the next 30 minutes.'
+   || '- After receiving the returned item, we will process the replacement within 1-2 business days.'
+   || '- The new item will be shipped with express delivery (3-5 business days).'
+   || 'Let us know if you have any further questions.
+   Best regards,
+   Retail Support Team'),
+
+  ('customer@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12394, '2024-08-26 09:10:00', 'Customer Complaint: Incorrect Item Received', 
+   'Hi,I wanted to follow up regarding the shipping label. It’s been a few hours, and I haven’t received the label yet. Could you please check on this? '
+   || 'I’m eager to return the incorrect item and get the replacement as soon as possible.Thanks again for your assistance.
+   Best regards,
+   John Doe'),
+
+  ('support@retailer.com', 'Retail Support', 'customer@example.com', 'John Doe', 12394, '2024-08-26 10:25:00', 'Customer Complaint: Incorrect Item Received', 
+   'Dear John,We apologize for the delay. We have re-sent the shipping label to your email address. Please check your inbox or spam folder, and confirm '
+   || 'if you have received it.Once we receive the returned item, we will expedite the process to ensure you receive the correct jacket as quickly as possible'
+   || 'We sincerely appreciate your understanding and patience during this process.
+   Best regards,
+   Retail Support Team'),
+
+  ('customer@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12394, '2024-08-26 12:40:00', 'Customer Complaint: Incorrect Item Received', 
+   'Hello,I received the shipping label this time and have packaged the incorrect item. I will drop it off at the courier today.'
+   || 'Could you please confirm the approximate delivery timeline for the replacement item once you receive the returned product?'
+   || 'Best regards,
+   John Doe'),
+
+  ('support@retailer.com', 'Retail Support', 'customer@example.com', 'John Doe', 12394, '2024-08-26 14:20:00', 'Customer Complaint: Incorrect Item Received', 
+   'Dear John,Thank you for sending back the incorrect item. Once we receive the return, the replacement jacket will be shipped within 1-2 business days. '
+   || 'Here’s what you can expect:'
+   || '- Once shipped, delivery will take approximately 3-5 business days (express shipping).'
+   || '- You will receive a tracking number via email for the shipment.'
+   || 'Please let us know if you need any further assistance during this process.
+   Best regards,
+   Retail Support Team'),
+
+  ('customer@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12394, '2024-08-26 17:50:00', 'Customer Complaint: Incorrect Item Received', 
+   'Hi,This entire process is taking much longer than expected. I’m disappointed with the service. I had hoped for a quicker resolution, especially since '
+   || 'the mistake was on your end. I’m now considering canceling the order and requesting a full refund.Please advise on how I can proceed with the refund process if I decide to cancel.'
+   || 'Best regards,John Doe'),
+
+  ('support@retailer.com', 'Retail Support', 'customer@example.com', 'John Doe', 12394, '2024-08-26 19:10:00', 'Customer Complaint: Incorrect Item Received', 
+   'Dear John,We understand your frustration, and we sincerely apologize for the inconvenience this has caused. To expedite the process, we have prioritized '
+   || 'your replacement order. Your jacket will now be processed and shipped out by tomorrow morning.'
+   || 'If you still wish to cancel the order and request a refund, please let us know. Otherwise, we will provide you with a tracking number once the item ships.'
+   || 'We truly appreciate your patience throughout this process and are committed to making it right
+   .Best regards,
+   Retail Support Team');
+
+
+
+INSERT INTO emails (sender_email, sender_name, receiver_email, receiver_name, thread_id, email_received_at, email_subject, email_content)
+VALUES
+  ('customer2@example.com', 'Sarah Lee', 'support@retailer.com', 'Retail Support', 12372, '2024-08-26 15:00:00', 'Product Inquiry: New Collection Availability',
+   'Hi,I’ve recently come across your website and saw some items from your new collection that I’m interested in. '
+   || 'Could you provide more details about the availability of the following items:'
+   || '- Leather Jacket (SKU: LJ1001)'
+   || '- High-waisted Jeans (SKU: HJ2003)'
+   || 'I’d also like to know if these items are available in different sizes and colors.'
+   || 'Looking forward to your reply.
+   Best regards,
+   Sarah Lee'),
+
+  ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Sarah Lee', 12372, '2024-08-26 15:45:00', 'Product Inquiry: New Collection Availability',
+   'Dear Sarah,Thank you for your inquiry about our new collection! We’re excited that you’ve found some items that you’re interested in.'
+   || 'Regarding the items you mentioned:'
+   || '- The Leather Jacket (SKU: LJ1001) is currently available in sizes S, M, and L, and comes in black and brown.'
+   || '- The High-waisted Jeans (SKU: HJ2003) are available in sizes 26 to 32, and they come in light and dark blue.'
+   || 'Let us know if you would like us to reserve these items for you, or if you have any other questions.'
+   || 'Best regards,
+   Retail Support Team'),
+
+  ('customer2@example.com', 'Sarah Lee', 'support@retailer.com', 'Retail Support', 12372, '2024-08-26 16:30:00', 'Product Inquiry: New Collection Availability',
+   'Hello,Thank you for the quick response. I’d like to proceed with the following:'
+   || '- Leather Jacket (Size: M, Color: Black)'
+   || '- High-waisted Jeans (Size: 28, Color: Dark Blue)'
+   || 'Could you also let me know if you offer free shipping on these items?'
+   || 'Thanks again for your help.
+   Best regards,
+   Sarah Lee'),
+
+  ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Sarah Lee', 12372, '2024-08-26 17:15:00', 'Product Inquiry: New Collection Availability',
+   'Dear Sarah,We’re glad to hear that you’re interested in proceeding with the order! Here’s what we can confirm:'
+   || '- The Leather Jacket (Size: M, Color: Black) is reserved for you.'
+   || '- The High-waisted Jeans (Size: 28, Color: Dark Blue) are also available and reserved.'
+   || 'Regarding shipping, we offer free standard shipping for orders over $100. Since your order qualifies, shipping will be free.'
+   || 'Would you like to finalize the order? Once confirmed, we’ll send you the payment link.
+   Best regards,
+   Retail Support Team'),
+
+  ('customer2@example.com', 'Sarah Lee', 'support@retailer.com', 'Retail Support', 12372, '2024-08-26 18:00:00', 'Product Inquiry: New Collection Availability',
+   'Hi,That’s great news! Yes, please proceed with the order. I’m ready to finalize the payment.'
+   || 'Looking forward to receiving the payment link.
+   Best regards,
+   Sarah Lee'),
+
+  ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Sarah Lee', 12372, '2024-08-26 18:30:00', 'Product Inquiry: New Collection Availability',
+   'Dear Sarah,We’re thrilled to finalize your order! Here’s the payment link: [payment-link-here].'
+   || 'Once the payment is complete, we’ll process your order immediately and send you a confirmation email with the tracking details.'
+   || 'Please feel free to reach out if you need any further assistance.
+   Best regards,
+   Retail Support Team'),
+
+  ('customer2@example.com', 'Sarah Lee', 'support@retailer.com', 'Retail Support', 12372, '2024-08-26 19:15:00', 'Product Inquiry: New Collection Availability',
+   'Hi,I’ve just completed the payment. Could you confirm that everything went through successfully?'
+   || 'Also, could you provide an estimated delivery time? Thanks again!
+   Best regards,
+   Sarah Lee'),
+
+  ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Sarah Lee', 12372, '2024-08-26 20:00:00', 'Product Inquiry: New Collection Availability',
+   'Dear Sarah,Thank you for your payment. We’ve received the payment, and your order has been successfully processed.'
+   || 'Here’s what you can expect next:'
+   || '- Your order will be dispatched within the next 24 hours.'
+   || '- You will receive an email with the tracking details once the shipment is on its way.'
+   || 'Standard shipping takes 3-5 business days, so you can expect to receive your items soon.'
+   || 'Best regards,
+   Retail Support Team'),
+
+  ('customer2@example.com', 'Sarah Lee', 'support@retailer.com', 'Retail Support', 12372, '2024-08-27 10:15:00', 'Product Inquiry: New Collection Availability',
+   'Hi,Thanks for the update. I’m excited to receive my order! Could you let me know if I can make any changes to the delivery address before it ships?'
+   || 'Just in case, here’s the current address I’d like it shipped to:'
+   || '- 123 Park Avenue, Suite 500'
+   || '- New York, NY 10001'
+   || 'Thanks again for your help!
+   Best regards,
+   Sarah Lee'),
+
+  ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Sarah Lee', 12372, '2024-08-27 11:00:00', 'Product Inquiry: New Collection Availability',
+   'Dear Sarah,We’ve updated your shipping address as requested.');
+
+
+
+
+INSERT INTO emails (sender_email, sender_name, receiver_email, receiver_name, thread_id, email_received_at, email_subject, email_content)
+VALUES
+  ('customer2@example.com', 'Emily Green', 'support@retailer.com', 'Retail Support', 12395, '2024-08-26 15:00:00', 'Order Delivered Confirmation',
+   'Hi Support Team,I just wanted to confirm that I received my order today. Everything was packed well and arrived in perfect condition. '
+   || 'Here’s a quick review of the items:'
+   || '- The sneakers (SKU: SN4501) are exactly what I was looking for – the fit is perfect.'
+   || '- The sweater (SKU: SW7832) is incredibly comfortable, and I love the color!'
+   || 'I’m really satisfied with the quality of your products. Thank you for a smooth shopping experience.
+   Best regards,
+   Emily Green'),
+
+  ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Emily Green', 12395, '2024-08-26 15:45:00', 'Order Delivered Confirmation',
+   'Dear Emily,Thank you for confirming the delivery of your order! We’re thrilled to hear that everything arrived in great condition and that you’re happy with the items.'
+   || 'Your feedback means a lot to us. It’s wonderful to know that the sneakers and sweater met your expectations.'
+   || 'If you have any further questions or if we can assist you in any way, don’t hesitate to reach out.
+   Best regards,
+   Retail Support Team'),
+
+  ('customer2@example.com', 'Emily Green', 'support@retailer.com', 'Retail Support', 12395, '2024-08-26 16:15:00', 'Order Delivered Confirmation',
+   'Hello Support Team,Thanks for your quick response! One quick question: do you have any care instructions for the sweater? I want to make sure I keep it in good condition.'
+   || 'Also, are there any new arrivals in the accessories section? I’m interested in checking them out.
+   Best regards,
+   Emily Green'),
+
+  ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Emily Green', 12395, '2024-08-26 17:00:00', 'Order Delivered Confirmation',
+   'Dear Emily,We’re happy to help! For the sweater (SKU: SW7832), here are the care instructions:'
+   || '- Machine wash cold with similar colors'
+   || '- Use mild detergent'
+   || '- Do not bleach'
+   || '- Lay flat to dry'
+   || '- Cool iron if needed'
+   || 'Regarding new arrivals, we’ve just added some great items to our accessories section, including:'
+   || '- Leather handbags'
+   || '- Statement jewelry pieces'
+   || '- Scarves and hats for the upcoming fall season'
+   || 'Feel free to browse our website or let us know if you need further assistance!
+   Best regards,
+   Retail Support Team'),
+
+  ('customer2@example.com', 'Emily Green', 'support@retailer.com', 'Retail Support', 12395, '2024-08-26 17:45:00', 'Order Delivered Confirmation',
+   'Hi Team,Thank you for the care instructions. I’ll make sure to follow them!'
+   || 'I checked out the new accessories, and I love the handbags. Could you let me know if there’s a discount available for returning customers?'
+   || 'Thanks again for all your help.
+   Best regards,
+   Emily Green'),
+
+  ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Emily Green', 12395, '2024-08-26 18:30:00', 'Order Delivered Confirmation',
+   'Dear Emily,We’re glad the care instructions were helpful!'
+   || 'Regarding your inquiry about discounts, we’re excited to offer a 10% discount for returning customers on purchases above $100. '
+   || 'Simply use the code RETURN10 at checkout to apply the discount.'
+   || 'We’re always here to assist if you need any more help.
+   Best regards,
+   Retail Support Team'),
+
+  ('customer2@example.com', 'Emily Green', 'support@retailer.com', 'Retail Support', 12395, '2024-08-26 19:15:00', 'Order Delivered Confirmation',
+   'Hi Team,That’s awesome! I’ll definitely make use of the discount. I’m adding a handbag to my cart right now.'
+   || 'One last thing: is there a gift wrapping option available for this order?
+   Best regards,
+   Emily Green'),
+
+  ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Emily Green', 12395, '2024-08-26 20:00:00', 'Order Delivered Confirmation',
+   'Dear Emily,We’re excited to hear that you’ll be making another purchase! Yes, we do offer gift wrapping for an additional $5. '
+   || 'You can select the gift wrap option at checkout before finalizing the order.'
+   || 'Let us know if you need further assistance!
+   Best regards,
+   Retail Support Team'),
+
+  ('customer2@example.com', 'Emily Green', 'support@retailer.com', 'Retail Support', 12395, '2024-08-27 10:15:00', 'Order Delivered Confirmation',
+   'Hi Team,Thanks again! I’ve placed my order and selected the gift wrap option. Looking forward to receiving the new items soon!'
+   || 'You’ve been so helpful throughout the entire process, and I really appreciate the great customer service.
+   Best regards,
+   Emily Green'),
+
+  ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Emily Green', 12395, '2024-08-27 11:00:00', 'Order Delivered Confirmation',
+   'Dear Emily,Thank you for your new order! We’re processing it and will send you the tracking details once it’s shipped.'
+   || 'We’re delighted to hear that you’ve had a positive experience shopping with us. It’s always our goal to ensure our customers are satisfied.'
+   || 'Feel free to reach out if you need anything else!
+   Best regards,
+   Retail Support Team'),
+
+  ('customer2@example.com', 'Emily Green', 'support@retailer.com', 'Retail Support', 12395, '2024-08-27 14:30:00', 'Order Delivered Confirmation',
+   'Hi,Just received the confirmation email that my new order has shipped. I really appreciate how fast everything is moving.'
+   || 'Thanks for making my shopping experience so smooth! I’m sure I’ll be a returning customer.
+   Best regards,
+   Emily Green'),
+
+  ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Emily Green', 12395, '2024-08-27 15:00:00', 'Order Delivered Confirmation',
+   'Dear Emily,We’re so glad to hear that your experience has been positive, and we can’t wait for you to receive your new order.'
+   || 'Please let us know if you need anything else, and we’ll be happy to assist.'
+   || 'We hope to see you shopping with us again soon!
+   Best regards,
+   Retail Support Team'),
+
+  ('customer2@example.com', 'Emily Green', 'support@retailer.com', 'Retail Support', 12395, '2024-08-28 12:00:00', 'Order Delivered Confirmation',
+   'Hi Team,Just a quick note to let you know that I received my new order today, and the handbag is beautiful!'
+   || 'Everything came in perfect condition, and I’m beyond happy with my purchase.'
+   || 'Thanks once again for the fantastic service.
+   Best regards,
+   Emily Green'),
+
+  ('support@retailer.com', 'Retail Support', 'customer2@example.com', 'Emily Green', 12395, '2024-08-28 12:45:00', 'Order Delivered Confirmation',
+   'Dear Emily,We’re thrilled to hear that you love your new handbag! It’s wonderful to know that everything arrived perfectly.'
+   || 'Thank you for being such a loyal customer. We look forward to serving you again in the future!
+   Best regards,
+   Retail Support Team');
+
+
+
+INSERT INTO emails (sender_email, sender_name, receiver_email, receiver_name, thread_id, email_received_at, email_subject, email_content)
+VALUES
+  -- Initial Inquiry from Customer
+  ('customer1@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12371, '2024-08-02 11:35:00', 'Order Delayed',
+   'Hi Support Team,I noticed that my order has not yet been delivered, even though it was supposed to arrive two days ago. '
+   || 'Could you please provide an update on the delivery status? The order number is #456789.'
+   || 'I’d appreciate any information you can share regarding the current status.
+   Thank you,
+   John Doe'),
+
+  -- Support Team's Initial Response
+  ('support@retailer.com', 'Retail Support', 'customer1@example.com', 'John Doe', 12371, '2024-08-02 12:00:00', 'Order Delayed',
+   'Dear John,Thank you for reaching out regarding your order. We apologize for the delay and are currently investigating the issue.'
+   || 'We’ll update you as soon as we receive more information from our shipping partner.We appreciate your patience.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Follow-Up Inquiry
+  ('customer1@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12371, '2024-08-03 10:00:00', 'Order Delayed',
+   'Hi,I haven’t received an update on my order yet. Could you provide a more concrete timeline? '
+   || 'It’s been almost a week now since the original delivery date, and I’m getting concerned.'
+   || 'Please expedite the process or offer an alternative solution.
+   Thank you,
+   John Doe'),
+
+  -- Support Team Delay Notification
+  ('support@retailer.com', 'Retail Support', 'customer1@example.com', 'John Doe', 12371, '2024-08-03 12:15:00', 'Order Delayed',
+   'Dear John,We apologize for the inconvenience. Our shipping partner has reported some logistical delays due to unforeseen circumstances.'
+   || 'We are working to ensure that your order is prioritized for delivery. The estimated delivery time is now extended by 3-5 business days.'
+   || 'If there is anything else we can do to assist you, please let us know.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Expresses Frustration
+  ('customer1@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12371, '2024-08-04 09:30:00', 'Order Delayed',
+   'Hi Support,This is becoming really frustrating. A delay of 3-5 business days is unacceptable, especially since I wasn’t informed earlier. '
+   || 'I expect much better communication and service from a company like yours.'
+   || 'If my order isn’t delivered by the end of this week, I’ll be forced to escalate this issue.'
+   || 'I hope you understand my position and can ensure timely action.
+   John Doe'),
+
+  -- Support Team's Apology and Offer
+  ('support@retailer.com', 'Retail Support', 'customer1@example.com', 'John Doe', 12371, '2024-08-04 11:00:00', 'Order Delayed',
+   'Dear John,We sincerely apologize for the inconvenience caused by this delay. 
+   We understand your frustration and assure you that we are doing everything in our power to resolve this matter.'
+   || 'As a gesture of goodwill, we would like to offer you a 15% discount on your current order or on a future purchase. '
+   || 'We’ll continue to monitor your shipment closely and keep you updated.Thank you for your understanding.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Escalates the Issue
+  ('customer1@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12371, '2024-08-04 16:30:00', 'Order Delayed',
+   'Hi,While I appreciate the discount offer, it doesn’t change the fact that I’m still without my order. This has gone beyond just a delay. '
+   || 'The lack of communication until I reached out and the continuing delays have been extremely frustrating.'
+   || 'I will be sharing my experience publicly if this isn’t resolved in the next 48 hours. Additionally, I expect full compensation for the inconvenience caused.'
+   || 'Please escalate this issue to your manager.John Doe'),
+
+  -- Support Team Escalates to Management
+  ('support@retailer.com', 'Retail Support', 'customer1@example.com', 'John Doe', 12371, '2024-08-05 09:15:00', 'Order Delayed',
+   'Dear John,We understand your frustration and sincerely apologize once again for the delay. '
+   || 'We have escalated this issue to our management team and are expediting the delivery process as a priority.'
+   || 'Our team will update you within the next 24 hours regarding the status of your shipment.'
+   || 'We greatly appreciate your patience and apologize for the inconvenience caused.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Expresses Discontent
+  ('customer1@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12371, '2024-08-05 10:45:00', 'Order Delayed',
+   'Hi,This situation is completely unacceptable. I expected better from a company like yours. '
+   || 'The escalation and “priority delivery” don’t seem to be making any difference. '
+   || 'If I don’t receive my order by the end of the day tomorrow, I will be requesting a full refund, and I will never shop with your company again.'
+   || 'Your company’s handling of this situation has been nothing short of disappointing.
+   John Doe'),
+
+  -- Support Team's Final Apology and Resolution
+  ('support@retailer.com', 'Retail Support', 'customer1@example.com', 'John Doe', 12371, '2024-08-05 13:30:00', 'Order Delayed',
+   'Dear John,We are deeply sorry for the ongoing issues with your order. After further escalation, we have confirmed that your shipment will be delivered within the next 24 hours.'
+   || 'As a token of our sincere apologies, we are offering you a full refund along with the delivery of your order. '
+   || 'We hope this helps to rectify the inconvenience caused, and we will also be offering an additional 25% discount on your next purchase if you choose to shop with us again.'
+   || 'Once again, we apologize for the frustration and inconvenience this has caused.
+   Best regards,
+   Retail Support Team'),
+
+  -- Customer Acknowledges Apology but Maintains Discontent
+  ('customer1@example.com', 'John Doe', 'support@retailer.com', 'Retail Support', 12371, '2024-08-05 15:00:00', 'Order Delayed',
+   'Hi,Thank you for the update, but I still find it disappointing that it took this long for a resolution. I’ll accept the refund and the delivery of my order, '
+   || 'but I hope your company learns from this situation and handles future delays with better communication.'
+   || 'I’ll consider the discount offer, but my confidence in your service has taken a significant hit.
+   John Doe'),
+
+  -- Support Team's Final Follow-Up
+  ('support@retailer.com', 'Retail Support', 'customer1@example.com', 'John Doe', 12371, '2024-08-06 09:30:00', 'Order Delayed',
+   'Dear John,We fully understand your concerns, and we are taking your feedback very seriously. '
+   || 'Our team is reviewing the entire process to ensure that such delays are communicated more effectively in the future.'
+   || 'We appreciate your understanding and hope to regain your trust in the future. 
+   If there is anything else we can do to assist, please don’t hesitate to reach out.
+   Best regards,
+   Retail Support Team');
+
+
+
 
 INSERT INTO emails (
   sender_email, 
