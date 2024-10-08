@@ -176,11 +176,18 @@ def summarize_thread_by_id(thread_id):
         {
             "role": "user", "content": f"""
             You are given below an email disucssion thread.
-            Summarize the email  pointwise in 3 new lines - "
-            1.Subject 
-            2.Meeting Agenda 
-            3.Important dates. 
+
+            Summarize the email in bullet points with heading 'Key Points:'"
+
+            First point should strictly only contain the subject of email.
+
+            Second point onwards should come a gist of the conversation in at most 5 points.
+
+            Last point should have a heading 'Important Dates:' and it should list 
+            all of the (if any) future dates mentioned in the conversation that seem 
+            relevant, with respective brief suitable descriptions.
             "
+
             Discussion thread:
 
           """ + discussion_thread
