@@ -55,7 +55,7 @@ def get_answer_from_email(email_subject, email_message, sender_name, doc_content
     Email Message: {email_message}
 
     Make sure to refer to the appropriate procedures mentioned in the subject and provide a comprehensive response,
-    including step-by-step guidelines, documentation, and any relevant timelines.
+    including step-by-step guidelines, documentation, and any relevant timelines. Don't mention subject line in the response.
     
     
     """

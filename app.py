@@ -2,7 +2,6 @@ from datetime import datetime,timezone
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-import random
 from sqlalchemy import Enum
 from PyPDF2 import PdfReader
 import io
@@ -96,35 +95,36 @@ class SOPDocument(db.Model):
 def hello():
     return "Hello, User!"
 
+def getSentimentHelper(sentiment_record):
+    sentiment_ = sentiment_record.sentiments if sentiment_record else 'Positive'
+    sentiment = ""
+    if (sentiment_ == 'Positive'):
+        sentiment = "postive"
+    elif (sentiment_ == 'Neutral'):
+        sentiment = 'neutral'
+    elif (sentiment_ == 'Needs attention'):
+        sentiment = 'needs_attention'
+    elif (sentiment_ == 'Critical'):
+        sentiment = 'critical'
+    else:
+        print ("something went wrong",sentiment_)
+        sentiment = 'positive'
+    return sentiment
+
+
 @app.route('/all_email_threads', methods=['GET'])
 def get_all_threads():
     threads = EmailThread.query.order_by(EmailThread.updated_at.desc(),EmailThread.created_at.desc(),EmailThread.thread_id.desc()).all()
     thread_list = []
     for thread in threads:
         sentiment_record = EmailThreadSentiment.query.filter_by(thread_id=thread.thread_id).first()
+        sentiment = getSentimentHelper(sentiment_record)
         
-        sentiment_ = sentiment_record.sentiments if sentiment_record else 'Positive'
-        sentiment = ""
-        if (sentiment_ == 'Positive'):
-            sentiment = "postive"
-        elif (sentiment_ == 'Neutral'):
-            sentiment = 'neutral'
-        elif (sentiment_ == 'Needs attention'):
-            sentiment = 'needs_attention'
-        elif (sentiment_ == 'Critical'):
-            sentiment = 'critical'
-        else:
-            print ("something went wrong")
-            sentiment = 'positive'
-
         sorted_emails = sorted(
             thread.emails, 
             key=lambda email: email.email_received_at or db.func.now(),
             reverse=True
         )
-        """
-        Sentiment analysis should be fetched here
-        """
         emails = [{
             'seq_no': i,
             'sender': email.sender_name,
@@ -133,7 +133,7 @@ def get_all_threads():
             'receiverEmail': email.receiver_email,
             'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
             'content': email.email_content,
-            'isOpen': False  # Assuming 'isOpen' is false for simplicity
+            'isOpen': False  
         } for i,email in  enumerate(sorted_emails)]
         
         thread_list.append({
@@ -144,30 +144,6 @@ def get_all_threads():
         })
 
     return jsonify({ "threads": thread_list,"time": datetime.now(timezone.utc).strftime("%d-%m-%y_%H:%M:%S")})
-
-# 3. GET specific email thread by thread_id with its emails
-@app.route('/all_email_by_thread_id/<int:thread_id>', methods=['GET'])
-def get_thread_by_id(thread_id):
-    thread = EmailThread.query.get(thread_id)
-
-    if not thread:
-        return jsonify({'error': 'Thread not found'}), 404
-
-    emails = [{
-        'sender': email.sender_name,
-        'senderEmail': email.sender_email,
-        'receiver': email.receiver_name,
-        'receiverEmail': email.receiver_email,
-        'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
-        'content': email.email_content,
-        'isOpen': False  # Assuming 'isOpen' is false for simplicity
-    } for email in thread.emails]
-
-    thread_data = {
-        'threadTitle': thread.thread_topic,
-        'emails': emails
-    }
-    return jsonify(thread_data)
 
 def sortEmails(emailList):
     return sorted(emailList, key=lambda email: email.email_received_at)
@@ -212,8 +188,8 @@ def summarize_thread_by_id(thread_id):
     db.session.commit()  
 
     # Send back an OK status  
-    return jsonify({}), 200
     """
+    return jsonify({}), 200
 
     # Temporary return statement
     return jsonify({'summary':"Here is the summary of the data...summary summary summary"})
@@ -262,11 +238,11 @@ def add_email_to_thread(thread_id):
     customerName, customerEmail = getCustomerNameAndEmail(thread.emails)
     # Create a new Email instance
     new_email = Email(
-        sender_email= data['senderEmail'],
+        sender_email= BUSINESS_SIDE_EMAIL,
+        sender_name = BUSINESS_SIDE_NAME,
         thread_id= thread_id,
         email_subject= data['subject'],
         email_content= data['content'],
-        sender_name = data['senderEmail'].split('@')[0],
         receiver_email = customerEmail,
         receiver_name = customerName,
         email_received_at=db.func.now()  # Set timestamp to now
@@ -283,57 +259,7 @@ def getCustomerNameAndEmail(emails):
         # If email receiver is not the business itself then it must be the customer
         if not BUSINESS_SIDE_EMAIL in email.receiver_email.lower():
             return email.receiver_name, email.receiver_email
-    return None
-
- # 4. SBP-3 [ 26th Sept 2024 ]
-@app.route('/generate_sentiment/<int:email_thread_id>', methods=['POST'])
-def generate_sentiment(email_thread_id):
-    # Fetch the email thread based on email_thread_id
-    email_thread = EmailThread.query.get(email_thread_id)
-    if not email_thread:
-        return jsonify({'error': 'Email thread not found'}), 404
-    
-    # Fetch all emails related to the thread
-    emails = email_thread.emails
-    
-    if not emails:
-        return jsonify({'error': 'No emails found in this thread.'}), 404
-    """
-    AI team's function will come here, we are expecting a integer between 1 to 10.
-    """
-    polarity = random.randint(1,10)
-    # Determine overall sentiment category based on polarity
-    if polarity > 6:
-        sentiment_category = "Positive"
-    elif 3 < polarity <= 6:
-        sentiment_category = "Needs attention"
-    elif polarity == 3:
-        sentiment_category = "Neutral"
-    else:
-        sentiment_category = "Critical"
-
-    # Saving to DB with table name : email_thread_sentiment
-    try:
-        EmailThreadSentiment.save_sentiment(email_thread_id, sentiment_category)
-    except ValueError as e:
-        return jsonify({'error': str(e)}), 400
-
-    # Response body for UI
-    sentiment_response = ""
-    if (sentiment_category == 'Positive'):
-        sentiment_response = 'positive'
-    elif (sentiment_category == 'Critical'):
-        sentiment_response = 'critical'
-    elif (sentiment_category == 'Needs attention'):
-        sentiment_response = 'needs_attention'
-    elif (sentiment_category == 'Neutral'):
-        sentiment_response = 'neutral'
-    else: # Something went wrong here
-        print ("Something went wrong with sentiment_response: ",sentiment_category,)
-        sentiment_response = 'neutral'
-
-    response = { 'overall_sentiment': sentiment_response }
-    return jsonify(response), 200
+    return "user","user@abc.com"
 
 @app.post('/upload_sop_doc/')
 def store_sop_doc_to_db():
@@ -406,7 +332,6 @@ def store_email_document_(thread_id, doc_id):
       )
       db.session.add(new_email)
       db.session.commit()
-
 
 @app.route('/store_thread_and_document' , methods=['POST'])
 def store_email_document():
