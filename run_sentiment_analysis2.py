@@ -1,41 +1,25 @@
 import schedule
 import time
-import psycopg2
 from datetime import datetime, timedelta
 from sqlalchemy import create_engine, Column, Integer, String, Text, TIMESTAMP, Enum, ForeignKey, func
 from sqlalchemy.orm import sessionmaker, relationship
 from sqlalchemy.ext.declarative import declarative_base
-import random
-
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-from langchain.chains import RetrievalQA
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import FAISS
-from langchain_community.document_loaders import PyPDFDirectoryLoader
-from langchain_openai import OpenAIEmbeddings
 import os
 
-# Load environment variables
 load_dotenv()
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 
-# Text Splitter for breaking down the SOP document
 text_splitter = RecursiveCharacterTextSplitter(
     separators=['\n\n', '\n', '.', ','],
     chunk_size=750,
     chunk_overlap=50
 )
-
-
-# LLM for answering questions (using ChatOpenAI for chat model support)
 llm = ChatOpenAI(model="gpt-4", temperature=0.5, max_tokens=1000)
 
-
-# SQLAlchemy Base
 Base = declarative_base()
-
-# Database Models
 class EmailThread(Base):
     __tablename__ = 'threads'
     thread_id = Column(Integer, primary_key=True)
@@ -59,7 +43,6 @@ class EmailThreadSentiment(Base):
     timestamp = Column(TIMESTAMP, default=func.now())
     thread = relationship("EmailThread", backref="sentiments")
 
-# Database connection setup
 DATABASE_URI = 'postgresql://ruchita:qwerty@localhost/poc'
 engine = create_engine(DATABASE_URI)
 Session = sessionmaker(bind=engine)
@@ -72,8 +55,19 @@ def get_sentiment_score(text):
     (
         "system",
         f"""
-     You are given a thread of emails between customer and customer support. Analyze the email thread and find the sentiment of the email 
-     discussion. Give me a number between 1 to 10 (> 8 means critical, >6 means needs attention, > 3 means neutral and else positive) \n
+        I will provide an email discussion thread between a customer and a customer support team for a supply chain company. 
+        Based on the conversation, categorize the sentiment and urgency of the email using the following categories:
+    1. **Critical (Negative Urgency)**: 
+        Emails that express high urgency, negative sentiment, or frustration. These emails require immediate action or resolution. 
+    2. **Needs Attention (Negative or Neutral)**: 
+        Emails with moderate urgency or concern, which may include complaints, requests for clarification, or unresolved issues. 
+        They may require follow-up but are not as pressing as critical emails.
+    3. **Neutral (No Immediate Action)**: 
+        Emails that are purely informational, with no immediate request or concern. These may provide updates, confirmations, or general communication.
+    4. **Positive (No Action Needed)**: Emails expressing satisfaction, appreciation, or positive feedback. 
+            No action or response is required unless it's to acknowledge the positive sentiment.
+    Based on this, categorize each email in the thread and briefly explain why it fits into the chosen category.
+     Give me a number between 1 to 10 (> 8 means critical, >6 means needs attention, > 3 means neutral and else positive) \n
      remember to only return the number and nothing else:\n\n
     """,
     ),
