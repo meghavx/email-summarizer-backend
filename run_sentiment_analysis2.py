@@ -75,7 +75,6 @@ def get_sentiment_score(text):
      You are given a thread of emails between customer and customer support. Analyze the email thread and find the sentiment of the email 
      discussion. Give me a number between 1 to 10 (> 8 means critical, >6 means needs attention, > 3 means neutral and else positive) \n
      remember to only return the number and nothing else:\n\n
-     
     """,
     ),
     ("human", "Discussion: " + text),
@@ -94,7 +93,7 @@ def analyze_sentiment_and_priority(text):
         sentiment_score = int(res.strip())
     except ValueError:
         print("Error parsing sentiment score.", res)
-        return
+        return "Positive"
     # Determine sentiment based on compound score
     if sentiment_score >= 8:
         sentiment = "critical"

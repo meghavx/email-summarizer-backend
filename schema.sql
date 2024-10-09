@@ -9,7 +9,8 @@ CREATE TABLE emails (
   thread_id INT NOT NULL,
   email_received_at TIMESTAMP,
   email_subject VARCHAR(50) NOT NULL,
-  email_content TEXT NOT NULL
+  email_content TEXT NOT NULL,
+  is_resolved Boolean DEFAULT true
 );
 
 CREATE TABLE threads (
