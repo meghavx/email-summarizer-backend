@@ -8,14 +8,14 @@ CREATE TABLE emails (
   receiver_name VARCHAR(100),
   thread_id INT NOT NULL,
   email_received_at TIMESTAMP,
-  email_subject VARCHAR(50) NOT NULL,
+  email_subject VARCHAR(100) NOT NULL,
   email_content TEXT NOT NULL,
   is_resolved Boolean DEFAULT true
 );
 
 CREATE TABLE threads (
   thread_id serial UNIQUE PRIMARY KEY,
-  thread_topic VARCHAR(50),
+  thread_topic VARCHAR(100),
   created_at timestamp DEFAULT now(),
   updated_at timestamp DEFAULT now()
 );
