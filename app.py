@@ -5,31 +5,26 @@ from flask_cors import CORS
 from sqlalchemy import Enum
 from PyPDF2 import PdfReader
 import io
-from sop_based_email_ai import get_answer_from_email
+from gpt_ai_functions import get_answer_from_email,get_summary_response
+from llama_ai_functions import llama_get_summary_response, llam_get_answer_from_email
 from threading import Thread
-from openai import OpenAI
-import os
 
 app = Flask(__name__)
-
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://ruchita:qwerty@localhost/poc'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 db = SQLAlchemy(app)
 CORS(app)
-
-client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY"),
-)
 
 # GLOBAL VARIABLES
 BUSINESS_SIDE_NAME = "Support Team"
 BUSINESS_SIDE_EMAIL = "support@business.com"
 
+AI_MODEL = "gpt" # "llama"
+
 class EmailThread(db.Model):
     __tablename__ = 'threads'
     thread_id = db.Column(db.Integer, primary_key=True)
-    thread_topic = db.Column(db.String(50), nullable=False)
+    thread_topic = db.Column(db.String(100), nullable=False)
     created_at = db.Column(db.TIMESTAMP, default=db.func.now())  # Default to current timestamp
     updated_at = db.Column(db.TIMESTAMP, default=db.func.now(), onupdate=db.func.now())  # Auto-update on modification
     
@@ -42,7 +37,7 @@ class Email(db.Model):
     receiver_name = db.Column(db.String(100),nullable=False)
     thread_id = db.Column(db.Integer, db.ForeignKey('threads.thread_id'), nullable=False)
     email_received_at = db.Column(db.TIMESTAMP, nullable=True)
-    email_subject = db.Column(db.String(50), nullable=False)
+    email_subject = db.Column(db.String(100), nullable=False)
     email_content = db.Column(db.Text, nullable=True)
     is_resolved = db.Column(db.Boolean, default=True)
     email_thread = db.relationship('EmailThread', backref=db.backref('emails', lazy=True))
@@ -97,10 +92,29 @@ class SOPDocument(db.Model):
     doc_content = db.Column(db.LargeBinary, nullable=False)
     doc_timestamp = db.Column(db.TIMESTAMP, default=db.func.now()) 
 
-# Routes
-@app.route('/')
-def hello():
-    return "Hello, User!"
+# Utils
+def get_pdf_content_by_doc_id(doc_id):
+    try:
+        sop_document = SOPDocument.query.filter_by(doc_id=doc_id).one()
+        if sop_document == None:
+            return ""
+        pdf_file = io.BytesIO(sop_document.doc_content)
+        reader = PdfReader(pdf_file)
+        pdf_content = " ".join([page.extract_text() for page in reader.pages])
+        return pdf_content
+    except Exception:
+        return None
+
+# Helper funtion to extract customer name and email from a list of emails
+def getCustomerNameAndEmail(emails):
+    for email in emails:
+        # If email receiver is not the business itself then it must be the customer
+        if not BUSINESS_SIDE_EMAIL in email.receiver_email.lower():
+            return email.receiver_name, email.receiver_email
+    return "user","user@abc.com"
+
+def sortEmails(emailList):
+    return sorted(emailList, key=lambda email: email.email_received_at)
 
 def getSentimentHelper(sentiment_record):
     sentiment_ = sentiment_record.sentiments if sentiment_record else 'Positive'
@@ -117,6 +131,11 @@ def getSentimentHelper(sentiment_record):
         print ("something went wrong",sentiment_)
         sentiment = 'positive'
     return sentiment
+
+# Routes
+@app.route('/')
+def hello():
+    return "Hello, User!"
 
 @app.route('/all_email_threads', methods=['GET'])
 def get_all_threads():
@@ -153,57 +172,6 @@ def get_all_threads():
 
     return jsonify({ "threads": thread_list,"time": datetime.now(timezone.utc).strftime("%d-%m-%y_%H:%M:%S")})
 
-def sortEmails(emailList):
-    return sorted(emailList, key=lambda email: email.email_received_at)
-
-@app.post('/summarize/<int:thread_id>')
-def summarize_thread_by_id(thread_id):
-    thread = EmailThread.query.get(thread_id)
-    if not thread:
-        return jsonify({'error': 'Thread not found'}), 404
-    
-    sorted_emails = sortEmails(thread.emails)
-    discussion_thread = ""
-    for email in sorted_emails:
-        sender = email.sender_email
-        date = email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None
-        content = email.email_content
-        email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
-        discussion_thread += email_entry
-
-
-    # Create a completion request to summarize the email content
-    completion = client.chat.completions.create(
-        model="gpt-3.5-turbo",
-        messages=[
-        {
-            "role": "user", "content": f"""
-            You are given below an email disucssion thread.
-            Summarize the email  pointwise in 3 new lines - "
-            1.Subject 
-            2.Meeting Agenda 
-            3.Important dates
-            4. A quick summary of email disucssion
-            "
-            Discussion thread:
-
-          """ + discussion_thread
-         }
-    ])
-
-    response = completion.choices[0].message.content.strip()
-
-    thread_summary = Summary(
-        thread_id = thread.thread_id,
-        summary_content = response
-    )
-
-    # Store summary record to DB
-    db.session.add(thread_summary)
-    db.session.commit()  
-
-    return (response)
-
 @app.route('/create/email', methods=['POST'])
 def create_email():
     data = request.json  # Parse the incoming JSON data
@@ -236,17 +204,14 @@ def create_email():
 def add_email_to_thread(thread_id):
     data = request.json  # Parse the incoming JSON data
     
-    # Validate the necessary fields
     if not all(k in data for k in ("senderEmail", "subject", "content")):
         return jsonify({'error': 'Missing required fields'}), 400
 
-    # Check if the thread exists
     thread = EmailThread.query.get(thread_id)
     if not thread:
         return jsonify({'error': 'Thread not found'}), 404
 
     customerName, customerEmail = getCustomerNameAndEmail(thread.emails)
-    # Create a new Email instance
     new_email = Email(
         sender_email= BUSINESS_SIDE_EMAIL,
         sender_name = BUSINESS_SIDE_NAME,
@@ -259,16 +224,7 @@ def add_email_to_thread(thread_id):
     )
     db.session.add(new_email)
     db.session.commit()
-
     return jsonify({'success': 'Email added to thread', 'email_record_id': new_email.email_record_id}), 201
-
-# Helper funtion to extract customer name and email from a list of emails
-def getCustomerNameAndEmail(emails):
-    for email in emails:
-        # If email receiver is not the business itself then it must be the customer
-        if not BUSINESS_SIDE_EMAIL in email.receiver_email.lower():
-            return email.receiver_name, email.receiver_email
-    return "user","user@abc.com"
 
 @app.post('/upload_sop_doc/')
 def store_sop_doc_to_db():
@@ -282,79 +238,6 @@ def store_sop_doc_to_db():
     db.session.add(sop_document)
     db.session.commit()
     return jsonify({}), 200
-
-def get_pdf_content_by_doc_id(doc_id):
-    try:
-        sop_document = SOPDocument.query.filter_by(doc_id=doc_id).one()
-        if sop_document == None:
-            return ""
-        pdf_file = io.BytesIO(sop_document.doc_content)
-        reader = PdfReader(pdf_file)
-        pdf_content = " ".join([page.extract_text() for page in reader.pages])
-        return pdf_content
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
-
-def store_email_document_(thread_id, doc_id):
-    with app.app_context():
-      # Fetch all valid email thread based on thread_id
-      email_thread = EmailThread.query.get(thread_id) 
-      if not email_thread:
-          return jsonify ({'error' : "Email thread not found"}) , 404
-  
-      document = get_pdf_content_by_doc_id(doc_id)
-  
-      if not document:
-          return jsonify ({'error' : "Document not found"}) , 404
-      
-      sorted_emails = sorted(
-          email_thread.emails, 
-          key=lambda email: email.email_received_at or db.func.now(),
-          reverse=True
-      )
-      latest_email = sorted_emails[0]
-      print ("latest_email",latest_email.email_content)
-      
-      discussion_thread = ""
-      for email in sorted_emails:
-        sender = email.sender_email
-        date = email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None
-        content = email.email_content
-        email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
-        discussion_thread += email_entry
-
-      content = get_answer_from_email(email_thread.thread_topic,discussion_thread,latest_email.sender_name,document)
-      
-      customerName, customerEmail = latest_email.sender_name, latest_email.sender_email
-      
-      new_email = Email(
-          sender_email= BUSINESS_SIDE_EMAIL,
-          sender_name = BUSINESS_SIDE_NAME,
-          thread_id= thread_id,
-          email_subject= email_thread.thread_topic,
-          email_content= content,
-          receiver_email = customerName,
-          receiver_name = customerEmail,
-          email_received_at=db.func.now(),  # Set timestamp to now
-          is_resolved = False
-      )
-      db.session.add(new_email)
-      db.session.commit()
-
-@app.route('/store_thread_and_document' , methods=['POST'])
-def store_email_document():
-    data = request.json # Parsing incoming JSON data 
-    thread_id = data.get('thread_id') # Fetching thread_id in JSON
-    document_id = data.get('doc_id') # Fetching document_id in JSON
-
-    # Check for valid thread_id and document_id 
-    if not thread_id or not document_id:
-        return jsonify ({'error' : "Provide valid thread_id and documemnt_id"}) , 400 
-    
-    Thread(target=store_email_document_, args=(thread_id, document_id)).start()
-
-    # Immediately respond with a 200 status
-    return jsonify({'success': 'Processing started in background', 'thread_id': thread_id}), 200
 
 @app.route("/check_new_emails/<last_updated_timestamp>", methods=["GET"])
 def check_new_emails(last_updated_timestamp):
@@ -386,6 +269,98 @@ def update_email(email_id):
         'email_record_id': email_record.email_record_id,
         'content': email_record.email_content
     }}), 200
+
+# AI APIs
+def get_summary(discussion_thread):
+    if (AI_MODEL == "llama"):
+        return llama_get_summary_response(discussion_thread)
+    else:
+        return get_summary_response(discussion_thread)
+
+def sop_email(thread_topic,discussion_thread,sender_name,doc):
+    if(AI_MODEL == "llama"):
+        return llam_get_answer_from_email(doc,discussion_thread)
+    else:
+        return get_answer_from_email(thread_topic,discussion_thread,sender_name,doc)
+
+def store_email_document_(thread_id, doc_id):
+    with app.app_context():
+      # Fetch all valid email thread based on thread_id
+      email_thread = EmailThread.query.get(thread_id) 
+      if not email_thread:
+          return jsonify ({'error' : "Email thread not found"}) , 404
+  
+      document = get_pdf_content_by_doc_id(doc_id)
+  
+      if not document:
+          return jsonify ({'error' : "Document not found"}) , 404
+      
+      sorted_emails = sorted(
+          email_thread.emails, 
+          key=lambda email: email.email_received_at or db.func.now(),
+          reverse=True
+      )
+      latest_email = sorted_emails[0]
+      print ("latest_email",latest_email.email_content)
+      
+      discussion_thread = ""
+      for email in sorted_emails:
+        sender = email.sender_email
+        date = email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None
+        content = email.email_content
+        email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
+        discussion_thread += email_entry
+
+      content = sop_email(email_thread.thread_topic,discussion_thread,latest_email.sender_name,document)
+      customerName, customerEmail = latest_email.sender_name, latest_email.sender_email
+      
+      new_email = Email(
+          sender_email= BUSINESS_SIDE_EMAIL,
+          sender_name = BUSINESS_SIDE_NAME,
+          thread_id= thread_id,
+          email_subject= email_thread.thread_topic,
+          email_content= content,
+          receiver_email = customerName,
+          receiver_name = customerEmail,
+          email_received_at=db.func.now(),  # Set timestamp to now
+          is_resolved = False
+      )
+      db.session.add(new_email)
+      db.session.commit()
+
+@app.route('/store_thread_and_document' , methods=['POST'])
+def store_email_document():
+    data = request.json # Parsing incoming JSON data 
+    thread_id = data.get('thread_id') # Fetching thread_id in JSON
+    document_id = data.get('doc_id') # Fetching document_id in JSON
+    if not thread_id or not document_id:
+        return jsonify ({'error' : "Provide valid thread_id and documemnt_id"}) , 400 
+    Thread(target=store_email_document_, args=(thread_id, document_id)).start()
+    return jsonify({'success': 'Processing started in background', 'thread_id': thread_id}), 200
+
+@app.post('/summarize/<int:thread_id>')
+def summarize_thread_by_id(thread_id):
+    thread = EmailThread.query.get(thread_id)
+    if not thread:
+        return jsonify({'error': 'Thread not found'}), 404
+    
+    sorted_emails = sortEmails(thread.emails)
+    discussion_thread = ""
+    for email in sorted_emails:
+        sender = email.sender_email
+        date = email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None
+        content = email.email_content
+        email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
+        discussion_thread += email_entry
+
+    response = get_summary(discussion_thread)
+    thread_summary = Summary(
+        thread_id = thread.thread_id,
+        summary_content = response
+    )
+    db.session.add(thread_summary)
+    db.session.commit()  
+    return (response)
 
 # Run the application
 if __name__ == '__main__':

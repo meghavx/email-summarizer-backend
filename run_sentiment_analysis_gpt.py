@@ -23,7 +23,7 @@ Base = declarative_base()
 class EmailThread(Base):
     __tablename__ = 'threads'
     thread_id = Column(Integer, primary_key=True)
-    thread_topic = Column(String(50), nullable=False)
+    thread_topic = Column(String(100), nullable=False)
     emails = relationship("Email", back_populates="email_thread")
 
 class Email(Base):
@@ -48,9 +48,7 @@ engine = create_engine(DATABASE_URI)
 Session = sessionmaker(bind=engine)
 session = Session()
 
-
 def get_sentiment_score(text):
-
     messages = [
     (
         "system",
@@ -73,14 +71,11 @@ def get_sentiment_score(text):
     ),
     ("human", "Discussion: " + text),
     ]
-
-
     ai_msg = llm.invoke(messages)
-    
     return (ai_msg.content)
 
 
-def analyze_sentiment_and_priority(text):
+def analyze_sentiment(text):
     # Analyze sentiment
     res = get_sentiment_score(text)
     try:
@@ -88,42 +83,26 @@ def analyze_sentiment_and_priority(text):
     except ValueError:
         print("Error parsing sentiment score.", res)
         return "Positive"
-    # Determine sentiment based on compound score
+    
     if sentiment_score >= 8:
-        sentiment = "critical"
+        sentiment = "Critical"
     elif sentiment_score > 6:
-        sentiment = "needs attention"  # Very negative sentiment
+        sentiment = "Needs attention"  # Very negative sentiment
     elif sentiment_score > 3:
-        sentiment = "netural"
+        sentiment = "Neutral"
     else:
-        sentiment = "positive"
-    
-    # Assign priority based on sentiment
-    if sentiment == 'critical':
-        priority = "Critical"
-    elif sentiment == 'needs attention':
-        priority = "Needs attention"
-    elif sentiment == 'positive':
-        priority = "Positive"
-    else:
-        priority = "Neutral"
-    
-    return priority
+        sentiment = "Positive"
+    return sentiment
 
 def update_sentiment(thread):
     if not thread:
         return
-
     current_time = datetime.now()
-
-    # Check if a sentiment record exists
     sentiment_record = session.query(EmailThreadSentiment).filter_by(thread_id=thread.thread_id).first()
-
     if sentiment_record:
         time_difference = current_time - sentiment_record.timestamp
         if time_difference < timedelta(hours=5):
             return  # Sentiment is recent, no need to update
-
     emails = [{
         'senderEmail': email.sender_email,
         'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
@@ -131,7 +110,6 @@ def update_sentiment(thread):
     } for email in thread.emails]
 
     prompt = ""
-
     for email in emails:
         sender = email['senderEmail']
         date = email['date']
@@ -139,11 +117,7 @@ def update_sentiment(thread):
         email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
         prompt += email_entry
 
-
-
-    sentiment_category = analyze_sentiment_and_priority(prompt)
-
-    # Save or update sentiment in the database
+    sentiment_category = analyze_sentiment(prompt)
     if sentiment_record:
         sentiment_record.sentiments = sentiment_category
         sentiment_record.timestamp = current_time
@@ -168,12 +142,8 @@ def job():
     run_sentiment_analysis()
 
 if __name__ == '__main__':
-    # Schedule the job to run every 5 hours
     schedule.every(5).hours.do(job)
-
-    # Initial run before scheduling the recurring task
     job()
-
     while True:
         schedule.run_pending()
         time.sleep(60)  # Sleep for a minute between checks

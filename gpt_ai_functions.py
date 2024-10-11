@@ -1,4 +1,3 @@
-# works with OpenAI model
 import os
 from langchain_openai import ChatOpenAI
 from langchain.chains import RetrievalQA
@@ -6,6 +5,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
 from dotenv import load_dotenv
+from openai import OpenAI
 
 load_dotenv()
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
@@ -17,6 +17,7 @@ text_splitter = RecursiveCharacterTextSplitter(
 
 embeddings = OpenAIEmbeddings()
 llm = ChatOpenAI(model="gpt-4", temperature=0.5, max_tokens=1000)
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"),)
 
 def get_answer_from_email(email_subject, email_message, sender_name, doc_content):
     text_chunks = text_splitter.split_text(doc_content)
@@ -41,6 +42,27 @@ def get_answer_from_email(email_subject, email_message, sender_name, doc_content
     including step-by-step guidelines, documentation, and any relevant timelines. Don't add subject line in the response.
     
     """
-    print("prompt",prompt)
     answer = qa.run(prompt)
+    print ("got answer",answer)
     return answer
+
+def get_summary_response(discussion_thread):
+    completion = client.chat.completions.create(
+        model="gpt-3.5-turbo",
+        messages=[
+        {
+            "role": "user", "content": f"""
+            You are given below an email disucssion thread.
+            Summarize the email  pointwise in 3 new lines - "
+            1.Subject 
+            2.Meeting Agenda 
+            3.Important dates
+            4. A quick summary of email disucssion
+            "
+            Discussion thread:
+
+          """ + discussion_thread
+         }
+    ])
+    response = completion.choices[0].message.content.strip()
+    return response
