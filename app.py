@@ -40,6 +40,7 @@ class Email(db.Model):
     email_received_at = db.Column(db.TIMESTAMP, nullable=True)
     email_subject = db.Column(db.String(50), nullable=False)
     email_content = db.Column(db.Text, nullable=True)
+    is_resolved = db.Column(db.Boolean, default=True)
     email_thread = db.relationship('EmailThread', backref=db.backref('emails', lazy=True))
 
 class Summary(db.Model):
@@ -126,13 +127,15 @@ def get_all_threads():
 
         emails = [{
             'seq_no': i,
+            'emailRecordId': email.email_record_id,
             'sender': email.sender_name,
             'senderEmail': email.sender_email,
             'receiver': email.receiver_name,
             'receiverEmail': email.receiver_email,
             'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
             'content': email.email_content,
-            'isOpen': False  
+            'isOpen': False,
+            'isResolved': email.is_resolved
         } for i, email in enumerate(sorted_emails)]
         
         thread_list.append({
@@ -360,6 +363,7 @@ def gen_support_email(sop_content, emails):
     Refer yourself as ABC support at the end of the mail.
     Make sure to refer to the appropriate procedures mentioned in the subject and provide a comprehensive response,
     including step-by-step guidelines, documentation, and any relevant timelines. Don't include the subject line in mail.
+    Do not mention subject in the response!
     Email exchanges: 
     """
     for email in emails:
@@ -401,7 +405,8 @@ def background_task(thread_id, document_id):
             sender_name = "support",
             receiver_email = "alex@abc.com",
             receiver_name ='alex',
-            email_received_at = db.func.now()  # Set timestamp to now
+            email_received_at = db.func.now(),  # Set timestamp to now
+            is_resolved = False
         )
         db.session.add(new_email)
         db.session.commit()
@@ -427,6 +432,24 @@ def check_new_emails(last_updated_timestamp):
             print ("condition passed",thread.updated_at,dt)
             return get_all_threads()
     return jsonify([])
+
+@app.route('/update/email/<int:email_id>', methods=['PUT'])
+def update_email(email_id):
+    data = request.json 
+    print ("data",data)
+    if not data or not data['content']:
+        return jsonify({'error': 'Field not provided for update'}), 400
+    email_record = Email.query.get(email_id)
+    if not email_record:
+        return jsonify({'error': 'Email not found'}), 404
+    email_record.email_content = data['content']
+    email_record.is_resolved = True
+    
+    db.session.commit()
+    return jsonify({'success': 'Email updated successfully', 'email': {
+        'email_record_id': email_record.email_record_id,
+        'content': email_record.email_content
+    }}), 200
 
 if __name__ == '__main__':
     app.run(debug=True,port=5001)

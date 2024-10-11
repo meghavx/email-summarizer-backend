@@ -54,9 +54,26 @@ def update_sentiment(thread):
     # Generate sentiment prompt based on emails in the thread
     emails = thread.emails
     prompt = f"""
-        Give me a number between 1 to 10 (> 8 means critical, >6 means needs attention, > 3 means neutral and else positive) \n
-        by Evaluating the sentiment for the email thread titled '{thread.thread_topic}':\n\n, 
-        remember to only return the number and nothing else:\n\n"""
+         I will provide you with an email discussion thread between a customer and a customer support team for a supply chain company. 
+        Based on the conversation, categorize the sentiment and urgency of the email using the following categories:
+        1. **Critical (Negative Sentiment + High Urgency)**: 
+           - Emails expressing frustration, anger, or dissatisfaction. These emails often include urgent requests or complaints and require immediate action to avoid further escalation.
+           - Examples: Use of strong negative language, repeated requests for assistance, escalations.
+        2. **Needs Attention (Neutral or Negative Sentiment + Medium Urgency)**:
+           - Emails that express concern, ask for clarification, or raise issues that need follow-up but are not as pressing as critical emails.
+           - Examples: Requests for updates, unresolved issues, polite complaints.
+        3. **Neutral (Informational + Low Urgency)**:
+           - Emails that do not require immediate action. These emails are generally informational, providing updates or confirmations without expressing significant emotions or concerns.
+           - Examples: Status updates, order confirmations, or general communication without pressing requests.
+        4. **Positive (Satisfaction + No Action Needed)**:
+           - Emails that express satisfaction, gratitude, or appreciation. These emails do not require any follow-up or immediate response unless it's to acknowledge the positive sentiment.
+           - Examples: Thank-you notes, positive feedback, compliments on service.
+        
+        Based on these categories, you should:
+        - Analyze the **tone**, **word choice**, and **urgency** of the email content.
+        - Give me a sentiment score between 1 and 10 based on the urgency and tone of the conversation (where 10 is highly critical, 7–8 needs attention, 4–6 neutral, and 1–3 positive).
+        - Only return the sentiment score as a number and nothing else.
+        """
     for email in emails:
         sender = email.sender_email
         date = email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else "Unknown"
@@ -73,7 +90,7 @@ def update_sentiment(thread):
         sentiment_score = int(response['message']['content'].strip())
     except ValueError:
         print("Error parsing sentiment score.")
-        return
+        return "Positive"
 
     # Map sentiment score to categories
     if sentiment_score > 8:
