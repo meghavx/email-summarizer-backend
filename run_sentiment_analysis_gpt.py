@@ -82,7 +82,7 @@ def analyze_sentiment(text):
         sentiment_score = int(res.strip())
     except ValueError:
         print("Error parsing sentiment score.", res)
-        return "Positive"
+        return 
     
     if sentiment_score >= 8:
         sentiment = "Critical"
@@ -118,6 +118,8 @@ def update_sentiment(thread):
         prompt += email_entry
 
     sentiment_category = analyze_sentiment(prompt)
+    if (not sentiment_category):
+        return
     if sentiment_record:
         sentiment_record.sentiments = sentiment_category
         sentiment_record.timestamp = current_time

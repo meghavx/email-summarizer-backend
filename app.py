@@ -19,7 +19,7 @@ CORS(app)
 BUSINESS_SIDE_NAME = "Support Team"
 BUSINESS_SIDE_EMAIL = "support@business.com"
 
-AI_MODEL = "gpt" # "llama"
+AI_MODEL = "gpt" # "gpt" "llama"
 
 class EmailThread(db.Model):
     __tablename__ = 'threads'
