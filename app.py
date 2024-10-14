@@ -388,11 +388,8 @@ def summarize_thread_by_id(thread_id):
 
 # [ EADB-4 | 15th October 2024 ]
 # GET API to display SOP Gaps : UI purpose
-@app.route('/get_category_gap/<int:doc_id>/<int:page_count>', methods=['GET'])
-def get_category_gaps(doc_id, page_count):
-    page_size = 5
-    page_offset = (page_count - 1) * page_size
-
+@app.route('/get_category_gap/<int:doc_id>', methods=['GET'])
+def get_category_gaps(doc_id):
     # Query to get counts of each enum value of gap_type for the given sop_doc_id
     enum_counts = (
         db.session.query(
@@ -419,8 +416,6 @@ def get_category_gaps(doc_id, page_count):
         .join(SOPGapCoverage, Category.category_id == SOPGapCoverage.category_id)
         .filter(SOPGapCoverage.sop_doc_id == doc_id)
         .order_by(SOPGapCoverage.coverage_id)  # You can change the ordering here
-        .limit(page_size)
-        .offset(page_offset)
         .all()
     )
 
