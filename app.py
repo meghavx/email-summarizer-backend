@@ -93,7 +93,6 @@ class SOPDocument(db.Model):
     doc_timestamp = db.Column(db.TIMESTAMP, default=db.func.now()) 
 
 
-
 # [ EADB-4 | 15th October 2024 ]
 # Category Model
 class Category(db.Model):
@@ -102,7 +101,7 @@ class Category(db.Model):
     category_name = db.Column(db.String(100), nullable=False)
     sop_doc_id = db.Column(db.Integer, db.ForeignKey('sop_document.doc_id'), nullable=False)
     created_at = db.Column(db.TIMESTAMP , default = db.func.now())
-    updated_at = db.Column(db.TIMESTAMP , default = db.func.now())
+    updated_at = db.Column(db.TIMESTAMP , default = db.func.now(), onupdate=db.func.now())
 
 #SOP Gap Coverage Model
 class SOPGapCoverage(db.Model):
@@ -112,7 +111,23 @@ class SOPGapCoverage(db.Model):
     sop_doc_id = db.Column(db.Integer, db.ForeignKey('sop_document.doc_id'), nullable=False)
     gap_type = db.Column(db.Enum('Fully Covered', 'Partially Covered', 'Insufficiently Covered', 'Ambiguously Covered', 'Not Covered', name='gap_category'), nullable=False)
     created_at = db.Column(db.TIMESTAMP , default = db.func.now())
-    updated_at = db.Column(db.TIMESTAMP , default = db.func.now())
+    updated_at = db.Column(db.TIMESTAMP , default = db.func.now(), onupdate=db.func.now())
+
+# [EADB-5 | 15th October 2024]
+# FAQs Model
+class FAQS(db.Model):
+    __tablename__ = 'faqs'
+    faq_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('query_categories.category_id'), nullable=False)
+    faq = db.Column(db.Text, nullable=False)
+    freq = db.Column(db.Integer, nullable=False, default=0)
+    created_at = db.Column(db.TIMESTAMP , default = db.func.now())
+    updated_at = db.Column(db.TIMESTAMP , default = db.func.now(), onupdate=db.func.now())
+
+    # Constraint for freq being positive
+    __table_args__ = (
+        db.CheckConstraint('freq >= 0', name='chk_positive'),
+    )
 
 
 # Utils
@@ -437,6 +452,18 @@ def get_category_gaps(doc_id):
 
     return jsonify(response)
 
+
+# [EADB-5 | 15th October 2024]
+# GET API to fetch FAQs with their corresponding frequencies
+@app.get('/get_faqs_with_freq')
+def get_faqs_with_freq():
+     # Query the faq and freq fields and order them by freq in descending order
+    faqs = FAQS.query.with_entities(FAQS.faq, FAQS.freq).order_by(desc(FAQS.freq)).all()
+    
+    # Convert the result into a list of dictionaries for better readability in JSON response
+    faq_list = [{"faq": faq.faq, "freq": faq.freq} for faq in faqs]
+    
+    return jsonify(faq_list)
 
 
 # Run the application
