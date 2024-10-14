@@ -14,7 +14,7 @@ CREATE TABLE emails (
 );
 
 CREATE TABLE threads (
-  thread_id serial UNIQUE PRIMARY KEY,
+  thread_id SERIAL UNIQUE PRIMARY KEY,
   thread_topic VARCHAR(100),
   created_at timestamp DEFAULT now(),
   updated_at timestamp DEFAULT now()
@@ -2210,8 +2210,19 @@ We apologize for your experience. We take your feedback seriously and will work 
 
 Best regards,
 Support Team',
-  'Support Team', 'Alex Brown'),
+  'Support Team', 'Alex Brown');
 
+INSERT INTO emails (
+  sender_email,
+  receiver_email,
+  thread_id,
+  email_received_at,
+  email_subject,
+  email_content,
+  sender_name,
+  receiver_name
+)
+VALUES
   ('john.doe@example.com', 'support@business.com', 12392, '2024-09-30 12:20:00', 'Outstanding Support', 
   'Dear Support Team,
 
@@ -2229,9 +2240,20 @@ Thank you for your kind words! We appreciate your feedback and are glad we could
 
 Best,
 Support Team', 
-    'Support Team', 'John Doe'),
+    'Support Team', 'John Doe');
 
-  ('daniel.james@example.com', 'support@business.com', 12394, '2024-09-30 08:00:00', 'Ongoing Issue with Service',
+INSERT INTO emails (
+  sender_email,
+  receiver_email,
+  thread_id,
+  email_received_at,
+  email_subject,
+  email_content,
+  sender_name,
+  receiver_name
+)
+VALUES
+  ('daniel.james@example.com', 'support@business.com', 12351, '2024-09-30 08:00:00', 'Ongoing Issue with Service',
   'Dear Support Team,
 
 I''ve noticed recurring issues with my service for the past week. It''s causing delays in my work, and I''d appreciate it if you could look into this urgently.
@@ -2239,7 +2261,7 @@ I''ve noticed recurring issues with my service for the past week. It''s causing 
 Thank you,
 Daniel James',
   'Daniel James', 'Support Team'),
-  ('support@business.com', 'daniel.james@example.com', 12394, '2024-09-30 08:15:00', 'Ongoing Issue with Service',
+  ('support@business.com', 'daniel.james@example.com', 12351, '2024-09-30 08:15:00', 'Ongoing Issue with Service',
   'Hi Daniel,
 
 Thank you for reaching out. We''re aware of some disruptions, and our team is currently working on it. We''ll update you once we have more information.
@@ -2247,7 +2269,7 @@ Thank you for reaching out. We''re aware of some disruptions, and our team is cu
 Best regards,
 Support Team',
   'Support Team', 'Daniel James'),
-  ('daniel.james@example.com', 'support@business.com', 12394, '2024-09-30 09:00:00', 'Ongoing Issue with Service',
+  ('daniel.james@example.com', 'support@business.com', 12351, '2024-09-30 09:00:00', 'Ongoing Issue with Service',
   'Hello,
 
 I appreciate your quick response, but this has been going on for days now. How much longer do I have to wait? This is starting to impact my business significantly.
@@ -2255,7 +2277,7 @@ I appreciate your quick response, but this has been going on for days now. How m
 Thank you for your understanding,
 Daniel James',
   'Daniel James', 'Support Team'),
-  ('support@business.com', 'daniel.james@example.com', 12394, '2024-09-30 09:30:00', 'Ongoing Issue with Service',
+  ('support@business.com', 'daniel.james@example.com', 12351, '2024-09-30 09:30:00', 'Ongoing Issue with Service',
   'Hi Daniel,
 
 I understand your frustration. We are treating this as a priority and will inform you as soon as it''s fixed. Please bear with us during this time.
@@ -2263,7 +2285,7 @@ I understand your frustration. We are treating this as a priority and will infor
 Regards,
 Support Team',
   'Support Team', 'Daniel James'),
-  ('daniel.james@example.com', 'support@business.com', 12394, '2024-09-30 10:00:00', 'Ongoing Issue with Service',
+  ('daniel.james@example.com', 'support@business.com', 12351, '2024-09-30 10:00:00', 'Ongoing Issue with Service',
   'Dear Support Team,
 
 It''s been hours, and still no progress. I''m losing patience. I can''t keep dealing with such unreliable service. I need a clear update now.
@@ -2271,7 +2293,7 @@ It''s been hours, and still no progress. I''m losing patience. I can''t keep dea
 Best,
 Daniel James',
   'Daniel James', 'Support Team'),
-  ('support@business.com', 'daniel.james@example.com', 12394, '2024-09-30 10:15:00', 'Ongoing Issue with Service',
+  ('support@business.com', 'daniel.james@example.com', 12351, '2024-09-30 10:15:00', 'Ongoing Issue with Service',
   'Hello Daniel,
 
 I completely understand your frustration. Our team is currently identifying the root cause, and we should have it resolved shortly. Thank you for your patience so far.
@@ -2279,7 +2301,7 @@ I completely understand your frustration. Our team is currently identifying the 
 Sincerely,
 Support Team',
   'Support Team', 'Daniel James'),
-  ('daniel.james@example.com', 'support@business.com', 12394, '2024-09-30 11:00:00', 'Ongoing Issue with Service',
+  ('daniel.james@example.com', 'support@business.com', 12351, '2024-09-30 11:00:00', 'Ongoing Issue with Service',
   'Hi,
 
 This is unacceptable! If this isn''t fixed within the next hour, I will have no choice but to look for alternatives. You''re pushing away your loyal customers!
@@ -2287,7 +2309,7 @@ This is unacceptable! If this isn''t fixed within the next hour, I will have no 
 Thanks,
 Daniel James',
   'Daniel James', 'Support Team'),
-  ('support@business.com', 'daniel.james@example.com', 12394, '2024-09-30 11:15:00', 'Ongoing Issue with Service',
+  ('support@business.com', 'daniel.james@example.com', 12351, '2024-09-30 11:15:00', 'Ongoing Issue with Service',
   'Dear Daniel,
 
 We sincerely apologize for the delay. We recognize the impact this is having on you, and we are escalating this issue to the highest priority. Please expect an update soon.
@@ -2295,7 +2317,7 @@ We sincerely apologize for the delay. We recognize the impact this is having on 
 Warm regards,
 Support Team',
   'Support Team', 'Daniel James'),
-  ('daniel.james@example.com', 'support@business.com', 12394, '2024-09-30 11:45:00', 'Ongoing Issue with Service',
+  ('daniel.james@example.com', 'support@business.com', 12351, '2024-09-30 11:45:00', 'Ongoing Issue with Service',
   'Hello,
 
 This is my final warning. If this isn''t resolved today, I will be terminating my account with your service and moving on. I cannot afford these delays any longer.
@@ -2303,7 +2325,7 @@ This is my final warning. If this isn''t resolved today, I will be terminating m
 Thank you,
 Daniel James',
   'Daniel James', 'Support Team'),
-  ('support@business.com', 'daniel.james@example.com', 12394, '2024-09-30 12:00:00', 'Ongoing Issue with Service',
+  ('support@business.com', 'daniel.james@example.com', 12351, '2024-09-30 12:00:00', 'Ongoing Issue with Service',
   'Dear Daniel,
 
 We deeply regret the inconvenience caused. The issue has now been resolved, and all systems should be functioning normally. We''ll be monitoring the situation closely. Please feel free to reach out if you need further assistance.
@@ -2311,7 +2333,7 @@ We deeply regret the inconvenience caused. The issue has now been resolved, and 
 Thank you for your patience,
 Support Team',
   'Support Team', 'Daniel James'),
-  ('daniel.james@example.com', 'support@business.com', 12394, '2024-09-30 12:30:00', 'Ongoing Issue with Service',
+  ('daniel.james@example.com', 'support@business.com', 12351, '2024-09-30 12:30:00', 'Ongoing Issue with Service',
   'Hi Support Team,
 
 It looks like things are working again, but this experience has shaken my trust. I hope there won''t be any more issues like this. Thanks for fixing it, but it shouldn''t have taken this long.
@@ -2319,7 +2341,7 @@ It looks like things are working again, but this experience has shaken my trust.
 Best regards,
 Daniel James',
   'Daniel James', 'Support Team'),
-  ('support@business.com', 'daniel.james@example.com', 12394, '2024-09-30 12:45:00', 'Ongoing Issue with Service',
+  ('support@business.com', 'daniel.james@example.com', 12351, '2024-09-30 12:45:00', 'Ongoing Issue with Service',
   'Dear Daniel,
 
 We understand, and we sincerely apologize once again. We value your business and are committed to making sure this doesn''t happen again. Please don''t hesitate to let us know if you have any further concerns.
@@ -2368,5 +2390,39 @@ CREATE TRIGGER update_thread_timestamp_trigger
 AFTER INSERT OR UPDATE ON emails
 FOR EACH ROW
 EXECUTE FUNCTION update_thread_timestamp();
+
+CREATE TABLE query_categories (
+  category_id SERIAL PRIMARY KEY,
+  category_name VARCHAR(100) NOT NULL,
+  sop_doc_id INTEGER NOT NULL REFERENCES sop_document (doc_id),
+  created_at TIMESTAMP DEFAULT NOW(),
+  updated_at TIMESTAMP DEFAULT NOW()
+);
+ 
+CREATE TABLE faqs (
+  faq_id SERIAL PRIMARY KEY, 
+  category_id INTEGER NOT NULL REFERENCES query_categories (category_id), 
+  faq TEXT NOT NULL, 
+  freq INTEGER NOT NULL DEFAULT 0 CONSTRAINT chk_positive CHECK (freq >= 0),
+  created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now()
+);
+ 
+CREATE TYPE GAP_CATEGORY AS ENUM (
+  'Fully Covered',
+  'Partially Covered',
+  'Insufficiently Covered',
+  'Ambiguously Covered',
+  'Not Covered'
+);
+ 
+CREATE TABLE sop_gap_coverage (
+  coverage_id SERIAL PRIMARY KEY,
+  category_id INTEGER NOT NULL REFERENCES query_categories (category_id),
+  sop_doc_id INTEGER NOT NULL REFERENCES sop_document (doc_id),
+  gap_type GAP_CATEGORY NOT NULL, 
+  created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now()
+);
 
 commit;
