@@ -109,7 +109,7 @@ class SOPGapCoverage(db.Model):
     coverage_id = db.Column(db.Integer, primary_key=True)
     category_id = db.Column(db.Integer, db.ForeignKey('query_categories.category_id'), nullable=False)
     sop_doc_id = db.Column(db.Integer, db.ForeignKey('sop_document.doc_id'), nullable=False)
-    gap_type = db.Column(db.Enum('Fully Covered', 'Partially Covered', 'Insufficiently Covered', 'Ambiguously Covered', 'Not Covered', name='gap_category'), nullable=False)
+    gap_type = db.Column(db.Enum('Fully Covered', 'Partially Covered', 'Inaccurately Covered', 'Ambiguously Covered', 'Not Covered', name='gap_category'), nullable=False)
     created_at = db.Column(db.TIMESTAMP , default = db.func.now())
     updated_at = db.Column(db.TIMESTAMP , default = db.func.now(), onupdate=db.func.now())
 
@@ -417,7 +417,7 @@ def get_category_gaps(doc_id):
     )
 
     # Format the enum counts into a dictionary
-    count_dict = {gap_type: 0 for gap_type in ['Fully Covered', 'Partially Covered', 'Insufficiently Covered', 'Ambiguously Covered', 'Not Covered']}
+    count_dict = {gap_type: 0 for gap_type in ['Fully Covered', 'Partially Covered', 'Inaccurately Covered', 'Ambiguously Covered', 'Not Covered']}
     for gap_type, count in enum_counts:
         count_dict[gap_type] = count
 

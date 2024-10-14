@@ -2411,7 +2411,7 @@ CREATE TABLE faqs (
 CREATE TYPE GAP_CATEGORY AS ENUM (
   'Fully Covered',
   'Partially Covered',
-  'Insufficiently Covered',
+  'Inaccurately Covered',
   'Ambiguously Covered',
   'Not Covered'
 );
