@@ -2,7 +2,7 @@ from datetime import datetime,timezone
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-from sqlalchemy import Enum
+from sqlalchemy import Enum, desc
 from PyPDF2 import PdfReader
 import io
 from gpt_ai_functions import get_answer_from_email,get_summary_response
@@ -91,6 +91,29 @@ class SOPDocument(db.Model):
     doc_id = db.Column(db.Integer, primary_key=True)
     doc_content = db.Column(db.LargeBinary, nullable=False)
     doc_timestamp = db.Column(db.TIMESTAMP, default=db.func.now()) 
+
+
+
+# [ EADB-4 | 15th October 2024 ]
+# Category Model
+class Category(db.Model):
+    __tablename__ = 'categories'
+    category_id = db.Column(db.Integer, primary_key=True)
+    category_name = db.Column(db.String(100), nullable=False)
+    sop_doc_id = db.Column(db.Integer, db.ForeignKey('sop_document.doc_id'), nullable=False)
+    created_at = db.Column(db.TIMESTAMP , default = db.func.now())
+    updated_at = db.Column(db.TIMESTAMP , default = db.func.now())
+
+#SOP Gap Coverage Model
+class SOPGapCoverage(db.Model):
+    __tablename__ = 'sop_gap_coverage'
+    coverage_id = db.Column(db.Integer, primary_key=True)
+    category_id = db.Column(db.Integer, db.ForeignKey('categories.category_id'), nullable=False)
+    sop_doc_id = db.Column(db.Integer, db.ForeignKey('sop_document.doc_id'), nullable=False)
+    gap_type = db.Column(db.Enum('Fully Covered', 'Partially Covered', 'Insufficiently Covered', 'Ambiguously Covered', 'Not Covered', name='gap_category'), nullable=False)
+    created_at = db.Column(db.TIMESTAMP , default = db.func.now())
+    updated_at = db.Column(db.TIMESTAMP , default = db.func.now())
+
 
 # Utils
 def get_pdf_content_by_doc_id(doc_id):
@@ -361,6 +384,65 @@ def summarize_thread_by_id(thread_id):
     db.session.add(thread_summary)
     db.session.commit()  
     return (response)
+
+
+# [ EADB-4 | 15th October 2024 ]
+# GET API to display SOP Gaps : UI purpose
+@app.route('/get_category_gap/<int:doc_id>/<int:page_count>', methods=['GET'])
+def get_category_gaps(doc_id, page_count):
+    page_size = 5
+    page_offset = (page_count - 1) * page_size
+
+    # Query to get counts of each enum value of gap_type for the given sop_doc_id
+    enum_counts = (
+        db.session.query(
+            SOPGapCoverage.gap_type,
+            db.func.count(SOPGapCoverage.coverage_id).label('count')
+        )
+        .filter(SOPGapCoverage.sop_doc_id == doc_id)
+        .group_by(SOPGapCoverage.gap_type)
+        .all()
+    )
+
+    # Format the enum counts into a dictionary
+    count_dict = {gap_type: 0 for gap_type in ['Fully Covered', 'Partially Covered', 'Insufficiently Covered', 'Ambiguously Covered', 'Not Covered']}
+    for gap_type, count in enum_counts:
+        count_dict[gap_type] = count
+
+    # Query to get the details of the gaps (category and gap_type)
+    gaps = (
+        db.session.query(
+            Category.category_name,
+            SOPGapCoverage.gap_type,
+            SOPGapCoverage.coverage_id
+        )
+        .join(SOPGapCoverage, Category.category_id == SOPGapCoverage.category_id)
+        .filter(SOPGapCoverage.sop_doc_id == doc_id)
+        .order_by(SOPGapCoverage.coverage_id)  # You can change the ordering here
+        .limit(page_size)
+        .offset(page_offset)
+        .all()
+    )
+
+    # List of Gaps
+    gap_list = [
+        {
+            "category": gap.category_name,
+            "gap_type": gap.gap_type,
+            "id": gap.coverage_id
+        }
+        for gap in gaps
+    ]
+
+    # List of Counts and Gaps
+    response = {
+        "count": count_dict,
+        "gaps": gap_list
+    }
+
+    return jsonify(response)
+
+
 
 # Run the application
 if __name__ == '__main__':
