@@ -97,7 +97,7 @@ class SOPDocument(db.Model):
 # [ EADB-4 | 15th October 2024 ]
 # Category Model
 class Category(db.Model):
-    __tablename__ = 'categories'
+    __tablename__ = 'query_categories'
     category_id = db.Column(db.Integer, primary_key=True)
     category_name = db.Column(db.String(100), nullable=False)
     sop_doc_id = db.Column(db.Integer, db.ForeignKey('sop_document.doc_id'), nullable=False)
@@ -108,7 +108,7 @@ class Category(db.Model):
 class SOPGapCoverage(db.Model):
     __tablename__ = 'sop_gap_coverage'
     coverage_id = db.Column(db.Integer, primary_key=True)
-    category_id = db.Column(db.Integer, db.ForeignKey('categories.category_id'), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('query_categories.category_id'), nullable=False)
     sop_doc_id = db.Column(db.Integer, db.ForeignKey('sop_document.doc_id'), nullable=False)
     gap_type = db.Column(db.Enum('Fully Covered', 'Partially Covered', 'Insufficiently Covered', 'Ambiguously Covered', 'Not Covered', name='gap_category'), nullable=False)
     created_at = db.Column(db.TIMESTAMP , default = db.func.now())
