@@ -130,6 +130,50 @@ class FAQS(db.Model):
     )
 
 
+# [ EADB-6 | 17th October 2024 ]
+# Making use of staging table from new ERD
+
+
+class StagingFAQS(db.Model):
+    __tablename__ = 'staging_faqs'
+    staging_faq_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    thread_id = db.Column(db.Integer, db.ForeignKey('threads.thread_id'), nullable=False)
+    faq = db.Column(db.Text, nullable=False)
+    processed_flag = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.TIMESTAMP, default=db.func.now())
+    updated_at = db.Column(db.TIMESTAMP, default=db.func.now(), onupdate=db.func.now())
+
+class StagingSopGapCoverage(db.Model):
+    __tablename__ = 'staging_sop_gap_coverage'
+    staging_coverage_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    thread_id = db.Column(db.Integer, db.ForeignKey('threads.thread_id'), nullable=False)
+    sop_doc_id = db.Column(db.Integer, db.ForeignKey('sop_documents.doc_id'), nullable=False)
+    category_id = db.Column(db.Integer, db.ForeignKey('query_categories.category_id'), nullable=False)
+    gap_type = db.Column(Enum('Fully Covered', 'Partially Covered', 'Inaccurately Covered', 'Ambiguously Covered', 'Not Covered', name='gap_category'), nullable=False)
+    processed_flag = db.Column(db.Boolean, default=False)
+    created_at = db.Column(db.TIMESTAMP, default=db.func.now())
+    updated_at = db.Column(db.TIMESTAMP, default=db.func.now(), onupdate=db.func.now())
+
+
+# Bucket Name : ENUM Type
+class BucketName(Enum):
+    EXCELLENT_COVERAGE = 'Excellent Coverage'
+    GOOD_COVERAGE = 'Good Coverage'
+    MODERATE_COVERAGE = 'Moderate Coverage'
+    MINIMAL_COVERAGE = 'Minimal Coverage'
+    POOR_COVERAGE = 'Poor Coverage'
+
+class CoverageBucket(db.Model):
+    __tablename__ = 'coverage_buckets'
+    bucket_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    bucket_name = db.Column(Enum('Excellent Coverage' , 'Good Coverage' , 'Moderate Coverage' , 'Minimal Coverage' , 'Poor Coverage', name='bucket_name'  ), nullable=False) # Should match the ENUM type
+    faq_count = db.Column(db.Integer, nullable=False)
+    percentage = db.Column(db.Float, nullable=False)
+    created_at = db.Column(db.TIMESTAMP, default=db.func.now())
+    updated_at = db.Column(db.TIMESTAMP, default=db.func.now())
+
+
+
 # Utils
 def get_pdf_content_by_doc_id(doc_id):
     try:
@@ -464,6 +508,20 @@ def get_faqs_with_freq():
     faq_list = [{"faq": faq.faq, "freq": faq.freq} for faq in faqs]
     
     return jsonify(faq_list)
+
+
+# [ EADB-6 | 17th October 2024 ]
+# Making use of staging table from new ERD
+
+# Saves FAQs and Gap Coverage Response to database
+# AI Teams logic goes here
+@app.route('/save_ai_response', methods=['POST'])
+def save_ai_response():
+   
+    # Saving the response from AI Team here
+
+    return jsonify({'message': 'AI response saved successfully'}), 201
+
 
 
 # Run the application
