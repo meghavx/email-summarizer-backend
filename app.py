@@ -124,7 +124,48 @@ class FAQS(db.Model):
         db.CheckConstraint('freq >= 0', name='chk_positive'),
     )
 
+class StagingFAQS(db.Model):
+    __tablename__ = 'staging_faqs'
+    staging_faq_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    thread_id = db.Column(db.Integer, db.ForeignKey('threads.thread_id'), nullable=False, primary_key=True)  # Foreign key to threads
+    faq = db.Column(db.Text, nullable=False)
+    processed_flag = db.Column(db.Boolean, default = False)
+    created_at = db.Column(db.TIMESTAMP , default = db.func.now())
+    updated_at = db.Column(db.TIMESTAMP , default = db.func.now(), onupdate=db.func.now())
+
 # Utils
+def FAQAggregator():
+    stagingFaqs = StagingFAQS.query.filter_by(processed_flag = False).all()
+    mainFaqs = FAQS.query.all()
+    
+    unProcessedStagingFaqList = []
+    for stagingFaq in stagingFaqs:
+        unProcessedStagingFaqList.append(stagingFaq.staging_faq)
+
+    mainFaqListWithCount  = []
+    for mainFaq in mainFaqs:
+        mainFaqListWithCount.append((mainFaq.faq_id, mainFaq.faq, mainFaq.freq))
+
+    # Calling AI function here,
+    # I shall pass, the faq names from staging table, and faq_id, faq and faq_count from the main table and expected 
+    # result from the function is [(faq_id,faq,new_count)]
+    newFaqListWithCount = calling_ai_function(unProcessedStagingFaqList, mainFaqListWithCount)
+
+    # Update the FAQ table with new FAQ data
+    for faq_id, new_faq, new_count in newFaqListWithCount:
+        faq_record = FAQS.query.get(faq_id)
+        if faq_record:
+            faq_record.faq = new_faq
+            faq_record.freq = new_count
+
+    # Mark all processed staging FAQs as processed
+    for staging_faq in unProcessedStagingFaqList:
+        staging_faq.processed_flag = True
+    db.session.commit()
+
+def calling_ai_function(x,y):
+    pass
+
 def get_pdf_content_by_doc_id(doc_id):
     try:
         sop_document = SOPDocument.query.filter_by(doc_id=doc_id).one()
