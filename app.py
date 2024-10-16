@@ -92,8 +92,6 @@ class SOPDocument(db.Model):
     doc_content = db.Column(db.LargeBinary, nullable=False)
     doc_timestamp = db.Column(db.TIMESTAMP, default=db.func.now()) 
 
-
-# [ EADB-4 | 15th October 2024 ]
 # Category Model
 class Category(db.Model):
     __tablename__ = 'query_categories'
@@ -113,7 +111,6 @@ class SOPGapCoverage(db.Model):
     created_at = db.Column(db.TIMESTAMP , default = db.func.now())
     updated_at = db.Column(db.TIMESTAMP , default = db.func.now(), onupdate=db.func.now())
 
-# [EADB-5 | 15th October 2024]
 # FAQs Model
 class FAQS(db.Model):
     __tablename__ = 'faqs'
@@ -123,12 +120,9 @@ class FAQS(db.Model):
     freq = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.TIMESTAMP , default = db.func.now())
     updated_at = db.Column(db.TIMESTAMP , default = db.func.now(), onupdate=db.func.now())
-
-    # Constraint for freq being positive
     __table_args__ = (
         db.CheckConstraint('freq >= 0', name='chk_positive'),
     )
-
 
 # Utils
 def get_pdf_content_by_doc_id(doc_id):
@@ -400,12 +394,8 @@ def summarize_thread_by_id(thread_id):
     db.session.commit()  
     return (response)
 
-
-# [ EADB-4 | 15th October 2024 ]
-# GET API to display SOP Gaps : UI purpose
 @app.route('/get_category_gap/<int:doc_id>', methods=['GET'])
 def get_category_gaps(doc_id):
-    # Query to get counts of each enum value of gap_type for the given sop_doc_id
     enum_counts = (
         db.session.query(
             SOPGapCoverage.gap_type,
@@ -415,13 +405,16 @@ def get_category_gaps(doc_id):
         .group_by(SOPGapCoverage.gap_type)
         .all()
     )
-
-    # Format the enum counts into a dictionary
-    count_dict = {gap_type: 0 for gap_type in ['Fully Covered', 'Partially Covered', 'Inaccurately Covered', 'Ambiguously Covered', 'Not Covered']}
+    count_dict = {
+            gap_type: 0 for gap_type in 
+                [  'Fully Covered'
+                 , 'Partially Covered'
+                 , 'Inaccurately Covered'
+                 , 'Ambiguously Covered'
+                 , 'Not Covered']
+    }
     for gap_type, count in enum_counts:
         count_dict[gap_type] = count
-
-    # Query to get the details of the gaps (category and gap_type)
     gaps = (
         db.session.query(
             Category.category_name,
@@ -433,8 +426,6 @@ def get_category_gaps(doc_id):
         .order_by(SOPGapCoverage.coverage_id)  # You can change the ordering here
         .all()
     )
-
-    # List of Gaps
     gap_list = [
         {
             "category": gap.category_name,
@@ -443,28 +434,18 @@ def get_category_gaps(doc_id):
         }
         for gap in gaps
     ]
-
-    # List of Counts and Gaps
     response = {
         "count": count_dict,
         "gaps": gap_list
     }
-
     return jsonify(response)
 
 
-# [EADB-5 | 15th October 2024]
-# GET API to fetch FAQs with their corresponding frequencies
 @app.get('/get_faqs_with_freq')
 def get_faqs_with_freq():
-     # Query the faq and freq fields and order them by freq in descending order
     faqs = FAQS.query.with_entities(FAQS.faq, FAQS.freq).order_by(desc(FAQS.freq)).all()
-    
-    # Convert the result into a list of dictionaries for better readability in JSON response
     faq_list = [{"faq": faq.faq, "freq": faq.freq} for faq in faqs]
-    
     return jsonify(faq_list)
-
 
 # Run the application
 if __name__ == '__main__':

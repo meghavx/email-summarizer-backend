@@ -1,6 +1,5 @@
 import schedule
 import time
-import psycopg2
 from datetime import datetime, timedelta
 from sqlalchemy import create_engine, Column, Integer, String, Text, TIMESTAMP, Enum, ForeignKey, func
 from sqlalchemy.orm import sessionmaker, relationship
@@ -40,6 +39,9 @@ engine = create_engine(DATABASE_URI)
 Session = sessionmaker(bind=engine)
 session = Session()
 
+def sortEmails(emailList):
+    return sorted(emailList, key=lambda email: email.email_received_at)
+
 def update_sentiment(thread):
     current_time = datetime.now()
 
@@ -52,7 +54,7 @@ def update_sentiment(thread):
             return  # Sentiment is recent, no need to update
 
     # Generate sentiment prompt based on emails in the thread
-    emails = thread.emails
+    emails = sortEmails(thread.emails)
     prompt = f"""
          I will provide you with an email discussion thread between a customer and a customer support team for a supply chain company. 
         Based on the conversation, categorize the sentiment and urgency of the email using the following categories:
@@ -131,12 +133,8 @@ def job():
     run_sentiment_analysis()
 
 if __name__ == '__main__':
-    # Schedule the job to run every 5 hours
     schedule.every(5).hours.do(job)
-
-    # Initial run before scheduling the recurring task
     job()
-
     while True:
         schedule.run_pending()
         time.sleep(60)  # Sleep for a minute between checks
