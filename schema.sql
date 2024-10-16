@@ -43,45 +43,16 @@ CREATE TABLE email_thread_sentiment (
 );
 
 
-
-
 -- SCRIPT UPDATE [ 16th Oct 2024 ] 
-CREATE TABLE staging_faqs (
-    staging_faq_id SERIAL PRIMARY KEY,
-    thread_id INTEGER NOT NULL REFERENCES threads (thread_id),
-    faq TEXT NOT NULL,
-    processed_flag BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now()
+CREATE TYPE GAP_CATEGORY AS ENUM (
+  'Fully Covered',
+  'Partially Covered',
+  'Inaccurately Covered',
+  'Ambiguously Covered',
+  'Not Covered'
 );
+ 
 
-CREATE TABLE staging_sop_gap_coverage (
-    staging_coverage_id SERIAL PRIMARY KEY,
-    thread_id INTEGER NOT NULL REFERENCES threads (thread_id),
-    sop_doc_id INTEGER NOT NULL REFERENCES sop_documents (doc_id),
-    category_id INTEGER NOT NULL REFERENCES query_categories (category_id),
-    gap_type gap_category NOT NULL,
-    processed_flag BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now()
-);
-
-CREATE TYPE BUCKET_NAME AS ENUM (
-    'Excellent Coverage',
-    'Good Coverage',
-    'Moderate Coverage',
-    'Minimal Coverage',
-    'Poor Coverage'
-);
-
-CREATE TABLE coverage_buckets (
-    bucket_id SERIAL PRIMARY KEY,
-    bucket_name backet_name NOT NULL,
-    faq_count INTEGER NOT NULL,
-    percentage FLOAT NOT NULL,
-    created_at TIMESTAMP DEFAULT now()
-	updated_at TIMESTAMP DEFAULT now()
-);
 
 
 
@@ -2449,14 +2420,6 @@ CREATE TABLE faqs (
   updated_at timestamp DEFAULT now()
 );
  
-CREATE TYPE GAP_CATEGORY AS ENUM (
-  'Fully Covered',
-  'Partially Covered',
-  'Inaccurately Covered',
-  'Ambiguously Covered',
-  'Not Covered'
-);
- 
 CREATE TABLE sop_gap_coverage (
   coverage_id SERIAL PRIMARY KEY,
   category_id INTEGER NOT NULL REFERENCES query_categories (category_id),
@@ -2464,6 +2427,43 @@ CREATE TABLE sop_gap_coverage (
   gap_type GAP_CATEGORY NOT NULL, 
   created_at timestamp DEFAULT now(),
   updated_at timestamp DEFAULT now()
+);
+
+CREATE TABLE staging_sop_gap_coverage (
+    staging_coverage_id SERIAL PRIMARY KEY,
+    thread_id INTEGER NOT NULL REFERENCES threads (thread_id),
+    sop_doc_id INTEGER NOT NULL REFERENCES sop_document (doc_id),
+    category_id INTEGER NOT NULL REFERENCES query_categories (category_id),
+    gap_type gap_category NOT NULL,
+    processed_flag BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT now(),
+    updated_at TIMESTAMP DEFAULT now()
+);
+
+CREATE TABLE staging_faqs (
+    staging_faq_id SERIAL PRIMARY KEY,
+    thread_id INTEGER NOT NULL REFERENCES threads (thread_id),
+    faq TEXT NOT NULL,
+    processed_flag BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT now(),
+    updated_at TIMESTAMP DEFAULT now()
+);
+
+CREATE TYPE BUCKET_NAME AS ENUM (
+    'Excellent Coverage',
+    'Good Coverage',
+    'Moderate Coverage',
+    'Minimal Coverage',
+    'Poor Coverage'
+);
+
+CREATE TABLE coverage_buckets (
+    bucket_id SERIAL PRIMARY KEY,
+    bucket_name VARCHAR(256) NOT NULL,
+    faq_count INTEGER NOT NULL,
+    percentage FLOAT NOT NULL,
+    created_at TIMESTAMP DEFAULT now(),
+	updated_at TIMESTAMP DEFAULT now()
 );
 
 commit;

@@ -8,6 +8,8 @@ import io
 from gpt_ai_functions import get_answer_from_email,get_summary_response
 from llama_ai_functions import llama_get_summary_response, llam_get_answer_from_email
 from threading import Thread
+import schedule
+import time
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://ruchita:qwerty@localhost/poc'
@@ -530,6 +532,17 @@ def save_ai_response():
     return jsonify({'message': 'AI response saved successfully'}), 201
 
 
+
+def job():
+    print(f"Running FAQ aggregator and Gap coverage analysor at {datetime.now()}")
+    pass
+
+def batchProcessingForFAQAndCoverage():
+    schedule.every(5).hours.do(job)
+    job()
+    while True:
+        schedule.run_pending()
+        time.sleep(60)
 
 # Run the application
 if __name__ == '__main__':
