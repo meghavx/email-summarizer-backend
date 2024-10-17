@@ -1,17 +1,12 @@
 from sqlalchemy.ext.declarative import declarative_base
 import schedule
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Text, TIMESTAMP, ForeignKey, func, CheckConstraint, Boolean, desc
+from sqlalchemy import create_engine, Column, Integer, String, Text, TIMESTAMP, ForeignKey, func, CheckConstraint, Boolean
 from sqlalchemy.orm import sessionmaker, relationship
 import time
 import ollama
 import re
 import json
-import spacy
-
-# Maintaining a global array that mainitains the threadIds that have been processed.
-processedThreads = []
-nlp = spacy.load("en_core_web_sm")
 
 Base = declarative_base()
 class EmailThread(Base):
@@ -77,67 +72,6 @@ def getDiscussionThread(thread):
         discussion_thread += email_entry
     return discussion_thread
 
-class Faq:
-    def __init__(self, faq_id, faq, count=1):
-        self.faq_id = faq_id
-        self.faq = faq
-        self.count = count
-
-# Sample FAQ data
-stagingFaqs = [Faq(None, "How do I reset my password?"), Faq(None, "Where can I find my purchase history?")]
-mainFaqs = [Faq(1, "How do I change my password?", count=5), Faq(2, "How to view order history?", count=3)]
-
-# Unprocessed FAQs
-unProcessedStagingFaqs = [stagingFaq.faq for stagingFaq in stagingFaqs]
-
-# Main FAQ list: tuples of (faq_id, faq string, count)
-mainFaqList = [(mainFaq.faq_id, mainFaq.faq, mainFaq.count) for mainFaq in mainFaqs]
-
-# Threshold for considering a FAQ as similar (tunable based on your needs)
-SIMILARITY_THRESHOLD = 0.85
-
-# Function to find the closest matching FAQ from the mainFaqList
-def find_closest_faq(unprocessed_faq, main_faqs, model):
-    max_similarity = 0
-    closest_faq = None
-    unprocessed_doc = model(unprocessed_faq)
-    
-    for faq_id, faq_text, count in main_faqs:
-        main_doc = model(faq_text)
-        similarity = unprocessed_doc.similarity(main_doc)
-        
-        if similarity > max_similarity:
-            max_similarity = similarity
-            closest_faq = (faq_id, faq_text, count)
-
-    return closest_faq, max_similarity
-
-def update_faq():
-    stagingFaqs = session.query(StagingFAQS ).filter_by(processed_flag = False).all()
-    mainFaqs = session.query(FAQS).all()
-    for unProcessedStagingFaq in unProcessedStagingFaqs:
-        closest_faq, similarity = find_closest_faq(unProcessedStagingFaq, mainFaqList, nlp)
-
-        if closest_faq and similarity >= SIMILARITY_THRESHOLD:
-            # If a similar FAQ is found, increment the count
-            print(f"FAQ '{unProcessedStagingFaq}' is similar to '{closest_faq[1]}' (similarity: {similarity:.2f}). Incrementing count.")
-            for faq in mainFaqs:
-                if faq.faq_id == closest_faq[0]:
-                    faq.count += 1
-        else:
-            # If no similar FAQ is found, add it to the main FAQ list with count 1
-            new_faq_id = len(mainFaqs) + 1  # Generate a new FAQ ID
-            new_faq = Faq(new_faq_id, unProcessedStagingFaq)
-            mainFaqs.append(new_faq)
-            mainFaqList.append((new_faq_id, unProcessedStagingFaq, new_faq.count))
-            print(f"FAQ '{unProcessedStagingFaq}' is new. Adding it to the list with count 1.")
-
-    # Print final FAQ list with counts
-    print("\nUpdated FAQ List:")
-    for faq in mainFaqs:
-        print(f"FAQ ID: {faq.faq_id}, Text: '{faq.faq}', Count: {faq.count}")
-
-
 def get_string_between_braces(text):
     match = re.search(r'\{.*?\}', text)
     if match:
@@ -145,9 +79,6 @@ def get_string_between_braces(text):
     return None  # Return None if no match is found
 
 def update_staging_faq(thread):
-    if thread.thread_id in processedThreads:
-        return
-
     discussion_thread = getDiscussionThread(thread)
     jsonFormat = "{ faq : \"generated_faq\" }"
     prompt = f"""

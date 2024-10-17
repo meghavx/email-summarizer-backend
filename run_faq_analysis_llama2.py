@@ -1,4 +1,3 @@
-
 import spacy
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, Column, Integer, String, Text, TIMESTAMP, ForeignKey, func, CheckConstraint, Boolean
@@ -68,13 +67,9 @@ def refresh_main_faq_list(session):
     faqs = session.query(FAQS).all()
     return [(faq.faq_id, faq.faq, faq.freq) for faq in faqs]
 
-# Initialize the FAQ list for the first time
 main_faq_list = refresh_main_faq_list(session)
-
-# Fetch all unprocessed staging FAQs
 unprocessed_staging_faqs = session.query(StagingFAQS).filter_by(processed_flag=False).order_by(StagingFAQS.created_at).all()
 
-# Function to find the closest matching FAQ
 def find_closest_faq(unprocessed_faq, main_faqs, model):
     max_similarity = 0
     closest_faq = None
@@ -90,32 +85,23 @@ def find_closest_faq(unprocessed_faq, main_faqs, model):
 
     return closest_faq, max_similarity
 
-# Process each unprocessed FAQ from staging
 for staging_faq in unprocessed_staging_faqs:
     unprocessed_faq_text = staging_faq.faq
     closest_faq, similarity = find_closest_faq(unprocessed_faq_text, main_faq_list, nlp)
-    
     if closest_faq and similarity >= SIMILARITY_THRESHOLD:
-        # If a similar FAQ is found, increment the `freq` of the matched FAQ
         faq_id = closest_faq[0]
         faq_record = session.query(FAQS).filter_by(faq_id=faq_id).first()
-        
         if faq_record:
             faq_record.freq += 1  # Increment the frequency
             print(f"FAQ '{unprocessed_faq_text}' matched '{closest_faq[1]}' (similarity: {similarity:.2f}). Incrementing count.")
     else:
-        # If no similar FAQ is found, add the unprocessed FAQ as a new entry
         new_faq = FAQS(faq=unprocessed_faq_text, freq=1, category_id=1)  # Adjust `category_id` as necessary
         session.add(new_faq)
         print(f"FAQ '{unprocessed_faq_text}' is new. Adding it to the FAQ list with count 1.")
     
-    # Mark the staging FAQ as processed
     staging_faq.processed_flag = True
-
-    # Commit changes and refresh the main FAQ list
     session.commit()
     main_faq_list = refresh_main_faq_list(session)  # Refresh the main FAQ list after each update
 
-# Close the session after processing
 session.close()
 
