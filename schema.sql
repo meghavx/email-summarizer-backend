@@ -43,6 +43,7 @@ CREATE TABLE email_thread_sentiment (
 );
 
 
+<<<<<<< HEAD
 -- SCRIPT UPDATE [ 16th Oct 2024 ] 
 CREATE TYPE GAP_CATEGORY AS ENUM (
   'Fully Covered',
@@ -54,6 +55,8 @@ CREATE TYPE GAP_CATEGORY AS ENUM (
  
 
 
+=======
+>>>>>>> cbc59291a0ef0a3b7082525b2e8b6a67b6884791
 
 
 --SCRIPT UPDATE [4th Oct 2024]
@@ -2429,6 +2432,21 @@ CREATE TABLE sop_gap_coverage (
   updated_at timestamp DEFAULT now()
 );
 
+<<<<<<< HEAD
+=======
+
+
+-- SCRIPT UPDATE [ 16th Oct 2024 ] 
+CREATE TABLE staging_faqs (
+    staging_faq_id SERIAL PRIMARY KEY,
+    thread_id INTEGER NOT NULL REFERENCES threads (thread_id),
+    faq TEXT NOT NULL,
+    processed_flag BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT now(),
+    updated_at TIMESTAMP DEFAULT now()
+);
+
+>>>>>>> cbc59291a0ef0a3b7082525b2e8b6a67b6884791
 CREATE TABLE staging_sop_gap_coverage (
     staging_coverage_id SERIAL PRIMARY KEY,
     thread_id INTEGER NOT NULL REFERENCES threads (thread_id),
@@ -2440,6 +2458,7 @@ CREATE TABLE staging_sop_gap_coverage (
     updated_at TIMESTAMP DEFAULT now()
 );
 
+<<<<<<< HEAD
 CREATE TABLE staging_faqs (
     staging_faq_id SERIAL PRIMARY KEY,
     thread_id INTEGER NOT NULL REFERENCES threads (thread_id),
@@ -2449,6 +2468,8 @@ CREATE TABLE staging_faqs (
     updated_at TIMESTAMP DEFAULT now()
 );
 
+=======
+>>>>>>> cbc59291a0ef0a3b7082525b2e8b6a67b6884791
 CREATE TYPE BUCKET_NAME AS ENUM (
     'Excellent Coverage',
     'Good Coverage',
@@ -2459,6 +2480,7 @@ CREATE TYPE BUCKET_NAME AS ENUM (
 
 CREATE TABLE coverage_buckets (
     bucket_id SERIAL PRIMARY KEY,
+<<<<<<< HEAD
     bucket_name VARCHAR(256) NOT NULL,
     faq_count INTEGER NOT NULL,
     percentage FLOAT NOT NULL,
@@ -2466,4 +2488,15 @@ CREATE TABLE coverage_buckets (
 	updated_at TIMESTAMP DEFAULT now()
 );
 
+=======
+    bucket_name BUCKET_NAME NOT NULL,
+    faq_count INTEGER NOT NULL,
+    percentage FLOAT NOT NULL,
+    created_at TIMESTAMP DEFAULT now(),
+	  updated_at TIMESTAMP DEFAULT now()
+);
+
+
+
+>>>>>>> cbc59291a0ef0a3b7082525b2e8b6a67b6884791
 commit;
