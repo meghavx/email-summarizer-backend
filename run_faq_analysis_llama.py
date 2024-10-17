@@ -1,13 +1,17 @@
 from sqlalchemy.ext.declarative import declarative_base
 import schedule
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Text, TIMESTAMP, ForeignKey, func, CheckConstraint, desc
+from sqlalchemy import create_engine, Column, Integer, String, Text, TIMESTAMP, ForeignKey, func, CheckConstraint, Boolean, desc
 from sqlalchemy.orm import sessionmaker, relationship
 import time
 import ollama
+import re
+import json
+import spacy
 
 # Maintaining a global array that mainitains the threadIds that have been processed.
 processedThreads = []
+nlp = spacy.load("en_core_web_sm")
 
 Base = declarative_base()
 class EmailThread(Base):
@@ -45,6 +49,15 @@ class Category(Base):
     created_at = Column(TIMESTAMP , default = func.now())
     updated_at = Column(TIMESTAMP , default = func.now(), onupdate=func.now())
 
+class StagingFAQS(Base):
+    __tablename__ = 'staging_faqs'
+    staging_faq_id = Column(Integer, primary_key=True, autoincrement=True)
+    thread_id = Column(Integer, ForeignKey('threads.thread_id'), nullable=False)
+    faq = Column(Text, nullable=False)
+    processed_flag = Column(Boolean, default=False)
+    created_at = Column(TIMESTAMP, default=func.now())
+    updated_at = Column(TIMESTAMP, default=func.now(), onupdate=func.now())
+
 DATABASE_URI = 'postgresql://ruchita:qwerty@localhost:5432/poc'
 engine = create_engine(DATABASE_URI)
 Session = sessionmaker(bind=engine)
@@ -53,57 +66,114 @@ session = Session()
 def sortEmails(emailList):
     return sorted(emailList, key=lambda email: email.email_received_at)
 
-def update_faq(thread):
+def getDiscussionThread(thread):
+    sorted_emails = sortEmails(thread.emails)
+    discussion_thread = ""
+    for email in sorted_emails:
+        sender = email.sender_email
+        date = email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None
+        content = email.email_content
+        email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
+        discussion_thread += email_entry
+    return discussion_thread
+
+class Faq:
+    def __init__(self, faq_id, faq, count=1):
+        self.faq_id = faq_id
+        self.faq = faq
+        self.count = count
+
+# Sample FAQ data
+stagingFaqs = [Faq(None, "How do I reset my password?"), Faq(None, "Where can I find my purchase history?")]
+mainFaqs = [Faq(1, "How do I change my password?", count=5), Faq(2, "How to view order history?", count=3)]
+
+# Unprocessed FAQs
+unProcessedStagingFaqs = [stagingFaq.faq for stagingFaq in stagingFaqs]
+
+# Main FAQ list: tuples of (faq_id, faq string, count)
+mainFaqList = [(mainFaq.faq_id, mainFaq.faq, mainFaq.count) for mainFaq in mainFaqs]
+
+# Threshold for considering a FAQ as similar (tunable based on your needs)
+SIMILARITY_THRESHOLD = 0.85
+
+# Function to find the closest matching FAQ from the mainFaqList
+def find_closest_faq(unprocessed_faq, main_faqs, model):
+    max_similarity = 0
+    closest_faq = None
+    unprocessed_doc = model(unprocessed_faq)
+    
+    for faq_id, faq_text, count in main_faqs:
+        main_doc = model(faq_text)
+        similarity = unprocessed_doc.similarity(main_doc)
+        
+        if similarity > max_similarity:
+            max_similarity = similarity
+            closest_faq = (faq_id, faq_text, count)
+
+    return closest_faq, max_similarity
+
+def update_faq():
+    stagingFaqs = session.query(StagingFAQS ).filter_by(processed_flag = False).all()
+    mainFaqs = session.query(FAQS).all()
+    for unProcessedStagingFaq in unProcessedStagingFaqs:
+        closest_faq, similarity = find_closest_faq(unProcessedStagingFaq, mainFaqList, nlp)
+
+        if closest_faq and similarity >= SIMILARITY_THRESHOLD:
+            # If a similar FAQ is found, increment the count
+            print(f"FAQ '{unProcessedStagingFaq}' is similar to '{closest_faq[1]}' (similarity: {similarity:.2f}). Incrementing count.")
+            for faq in mainFaqs:
+                if faq.faq_id == closest_faq[0]:
+                    faq.count += 1
+        else:
+            # If no similar FAQ is found, add it to the main FAQ list with count 1
+            new_faq_id = len(mainFaqs) + 1  # Generate a new FAQ ID
+            new_faq = Faq(new_faq_id, unProcessedStagingFaq)
+            mainFaqs.append(new_faq)
+            mainFaqList.append((new_faq_id, unProcessedStagingFaq, new_faq.count))
+            print(f"FAQ '{unProcessedStagingFaq}' is new. Adding it to the list with count 1.")
+
+    # Print final FAQ list with counts
+    print("\nUpdated FAQ List:")
+    for faq in mainFaqs:
+        print(f"FAQ ID: {faq.faq_id}, Text: '{faq.faq}', Count: {faq.count}")
+
+
+def get_string_between_braces(text):
+    match = re.search(r'\{.*?\}', text)
+    if match:
+        return match.group()  # Return the matched string
+    return None  # Return None if no match is found
+
+def update_staging_faq(thread):
     if thread.thread_id in processedThreads:
         return
 
-    faqs = session.query(FAQS).with_entities(FAQS.faq, FAQS.freq).order_by(desc(FAQS.freq)).all()
-    faqList = ""
-    i = 1
-    for faq in faqs:
-        faqList += str(i) + '. ' + faq.faq + '\n'
-        i += 1
-
+    discussion_thread = getDiscussionThread(thread)
+    jsonFormat = "{ faq : \"generated_faq\" }"
     prompt = f"""
-              You are given a list of frequently asked questions and a email thread between customer and customer support. 
-             Based on the email discussion decide which frequently asked question can be considered for the email thread and return it's corrosponding number.
-            Remeber to only return the number and nothing else! If the email thread cannot be categorised between any of the FAQ. Return a new frequently asked question.
-            The new frequently asked question should be short and generalized.
-
-            Here is a list of frequently asked questions:
-            {faqList}
-
-            Here is the email discussion:
-            """
+        You are given a email discussion thread between a customer and customer support. You need to understand
+        the intent of the email discussion and give me a very generic Frequently Asked question that can be considered for the email discussion.
+        Email discussion:
+            {discussion_thread}
+        Return the result in a JSON format like this {jsonFormat} and nothing else.
+    """
+    res = ollama.generate(model = 'llama3.2', prompt = prompt + discussion_thread)
+    jsonRes = get_string_between_braces(res['response'])
+    if (not jsonRes):
+        return
+    encodedJson = json.loads(jsonRes)
+    stageFaq = StagingFAQS(
+                thread_id = thread.thread_id
+              , faq = encodedJson['faq']
+            )
+    print (res['response'])
+    session.add(stageFaq)
+    session.commit()  
     
-    emails = sortEmails(thread.emails)
-    for email in emails:
-        sender = email.sender_email
-        date = email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else "Unknown"
-        content = email.email_content
-        prompt += f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
-    
-    prompt += "Remember to only return a number or the new question and nothing else!!"
-    response = ollama.chat(
-        model='llama3.2',
-        messages=[{'role': 'user', 'content': prompt}]
-    )
-    try:
-        faqIndex = int(response['message']['content'].strip())
-        print ("got index, ", faqIndex, faqs[faqIndex], " for thread topic: ", thread.thread_topic)
-        faqRecord = session.query(FAQS).filter_by(faq = faqs[faqIndex].faq).first()
-        if faqRecord:
-            faqRecord.freq += 1
-            session.add(faqRecord)
-    except:
-        print("Got new faq ",response['message']['content'].strip())
-        return 
-    session.commit()
-
 def run_faq_analysis():
     threads = session.query(EmailThread).all()  # Fetch all threads
     for thread in threads:
-        update_faq(thread)  # Update sentiment for each thread
+        update_staging_faq(thread)  # Update sentiment for each thread
 
 def job():
     print(f"Running sentiment analysis at {datetime.now()}")

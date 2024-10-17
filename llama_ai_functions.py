@@ -26,7 +26,6 @@ def llam_get_answer_from_email(sop_content, discussion_thread):
 
     
     """
-    
 
     response = ollama.chat(
         model='llama3.2',
