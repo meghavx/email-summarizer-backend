@@ -2462,8 +2462,8 @@ CREATE TABLE coverage_buckets (
     bucket_name BUCKET_NAME NOT NULL,
     faq_count INTEGER NOT NULL,
     percentage FLOAT NOT NULL,
-    created_at TIMESTAMP DEFAULT now()
-	updated_at TIMESTAMP DEFAULT now()
+    created_at TIMESTAMP DEFAULT now(),
+	  updated_at TIMESTAMP DEFAULT now()
 );
 
 
