@@ -37,6 +37,17 @@ poc=#
 
 ```
 
+### To Setup LLAMA Model 
+
+Download the tool from [here](https://ollama.com)
+
+We have used llama3.2. To install that version use following command :
+
+```
+$ ollama run llama3.2
+
+```
+
 ### to run the application
 
 ```bash
