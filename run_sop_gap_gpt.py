@@ -29,7 +29,6 @@ class SOPDocument(Base):
 class FAQS(Base):
     __tablename__ = 'faqs'
     faq_id = Column(Integer, primary_key=True, autoincrement=True)
-    category_id = Column(Integer, ForeignKey('query_categories.category_id'), nullable=False)
     faq = Column(Text, nullable=False)
     freq = Column(Integer, nullable=False, default=0)
     created_at = Column(TIMESTAMP , default = func.now())

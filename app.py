@@ -117,7 +117,6 @@ class SOPGapCoverage(db.Model):
 class FAQS(db.Model):
     __tablename__ = 'faqs'
     faq_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    category_id = db.Column(db.Integer, db.ForeignKey('query_categories.category_id'), nullable=False)
     faq = db.Column(db.Text, nullable=False)
     freq = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.TIMESTAMP , default = db.func.now())

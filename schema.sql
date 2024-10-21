@@ -2411,7 +2411,6 @@ CREATE TABLE query_categories (
  
 CREATE TABLE faqs (
   faq_id SERIAL PRIMARY KEY, 
-  category_id INTEGER NOT NULL REFERENCES query_categories (category_id), 
   faq TEXT NOT NULL, 
   freq INTEGER NOT NULL DEFAULT 0 CONSTRAINT chk_positive CHECK (freq >= 0),
   created_at timestamp DEFAULT now(),

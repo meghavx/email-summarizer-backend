@@ -4,9 +4,21 @@ from datetime import datetime
 from sqlalchemy import create_engine, Column, Integer, String, Text, TIMESTAMP, ForeignKey, func, CheckConstraint, Boolean
 from sqlalchemy.orm import sessionmaker, relationship
 import time
-import ollama
-import re
 import json
+import os
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+load_dotenv()
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+
+text_splitter = RecursiveCharacterTextSplitter(
+    separators=['\n\n', '\n', '.', ','],
+    chunk_size=750,
+    chunk_overlap=50
+)
+llm = ChatOpenAI(model="gpt-4", temperature=0.5, max_tokens=1000)
 
 Base = declarative_base()
 class EmailThread(Base):
@@ -80,7 +92,6 @@ def get_string_between_braces(text):
     return text[n1:(n2+1)]
     
 def update_faq(stagingFaqs):
-    print ("reached here")
     stagingFaqString = "[\n"
     
     i = 0
@@ -95,9 +106,11 @@ def update_faq(stagingFaqs):
         faqs = {stagingFaqString}
         Can you give me the result in a JSON format strucutured as {jsonFormat}
         """
-    res = ollama.generate(model = 'llama3.2', prompt = prompt )
-    print("res",res['response'])
-    jsonRes = get_string_between_braces(res['response'])
+    messages = [("human", prompt),]
+    ai_msg = llm.invoke(messages)
+    res = ai_msg.content
+    print("res",res)
+    jsonRes = get_string_between_braces(res)
     print ("jsonRes",jsonRes)
     if (not jsonRes):
         return
@@ -105,7 +118,7 @@ def update_faq(stagingFaqs):
     resultList = encodedJson['result']
     for res in resultList:
         faqRes = FAQS(
-                faq = res['group'][0]
+              faq = res['group'][0]
               , freq = len(res['group'])
             )
         print (res['group'])

@@ -4,7 +4,7 @@ def llama_get_summary_response(discussion_thread):
     prompt = f"""Please quickly summarize the following email thread in 2-3 points. 
                 Include the main points, important decisions, and highlight any significant dates. 
                 Here is the list of emails in the thread:\n\n"""
-    response = ollama.chat(model='llama3.2:1b', messages=[{
+    response = ollama.chat(model='llama3.2', messages=[{
     'role': 'user',
     'content': prompt + discussion_thread,
     },])

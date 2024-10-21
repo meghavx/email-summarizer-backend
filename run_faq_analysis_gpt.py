@@ -4,9 +4,22 @@ from datetime import datetime
 from sqlalchemy import create_engine, Column, Integer, String, Text, TIMESTAMP, ForeignKey, func, CheckConstraint, Boolean
 from sqlalchemy.orm import sessionmaker, relationship
 import time
-import ollama
 import re
 import json
+import os
+from dotenv import load_dotenv
+from langchain_openai import ChatOpenAI
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+load_dotenv()
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+
+text_splitter = RecursiveCharacterTextSplitter(
+    separators=['\n\n', '\n', '.', ','],
+    chunk_size=750,
+    chunk_overlap=50
+)
+llm = ChatOpenAI(model="gpt-4", temperature=0.5, max_tokens=1000)
 
 Base = declarative_base()
 class EmailThread(Base):
@@ -57,76 +70,63 @@ engine = create_engine(DATABASE_URI)
 Session = sessionmaker(bind=engine)
 session = Session()
 
-def findFirstOccurance(text,ch):
-    for i in range(0,len(text)):
-        if(text[i] == ch):
-            return i
-    return None
+def sortEmails(emailList):
+    return sorted(emailList, key=lambda email: email.email_received_at)
 
-def findLastOccurance(text,ch):
-    lastIdx = -1
-    for i in range(0, len(text)):
-        if(text[i] == ch):
-            lastIdx = i
-    if (lastIdx == -1):
-        return None
-    return lastIdx
+def getDiscussionThread(thread):
+    sorted_emails = sortEmails(thread.emails)
+    discussion_thread = ""
+    for email in sorted_emails:
+        sender = email.sender_email
+        date = email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None
+        content = email.email_content
+        email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
+        discussion_thread += email_entry
+    return discussion_thread
 
 def get_string_between_braces(text):
-    n1 = findFirstOccurance(text,'{')
-    n2 = findLastOccurance(text,'}')
-    if (not n1 and not n2):
-        return None
-    return text[n1:(n2+1)]
-    
-def update_faq(stagingFaqs):
-    print ("reached here")
-    stagingFaqString = "[\n"
-    
-    i = 0
-    for stagingFaq in stagingFaqs:
-        stagingFaqString += (stagingFaq.faq + "\n") if (i == len(stagingFaqs) - 1) else (stagingFaq.faq + ".\n")
+    match = re.search(r'\{.*?\}', text)
+    if match:
+        return match.group()  # Return the matched string
+    return None  # Return None if no match is found
 
-    stagingFaqString += "\n]\n"
-
-    jsonFormat = "{ \"result\" : [{\"group\": [\"question1\",\"question2\"] }] }"
+def update_staging_faq(thread):
+    discussion_thread = getDiscussionThread(thread)
+    jsonFormat = "{ faq : \"generated_faq\" }"
     prompt = f"""
-        From the below list, group the questions which are contextually simialar to each other:
-        faqs = {stagingFaqString}
-        Can you give me the result in a JSON format strucutured as {jsonFormat}
-        """
-    res = ollama.generate(model = 'llama3.2', prompt = prompt )
-    print("res",res['response'])
-    jsonRes = get_string_between_braces(res['response'])
-    print ("jsonRes",jsonRes)
+        You are given a email discussion thread between a customer and customer support. You need to understand
+        the intent of the email discussion and give me a very generic Frequently Asked question that can be considered for the email discussion.
+        Email discussion:
+            {discussion_thread}
+        Return the result in a JSON format like this {jsonFormat} and nothing else.
+    """
+    messages = [("human", prompt),]
+    ai_msg = llm.invoke(messages)
+    res = ai_msg.content
+    jsonRes = get_string_between_braces(res)
     if (not jsonRes):
         return
     encodedJson = json.loads(jsonRes)
-    resultList = encodedJson['result']
-    for res in resultList:
-        faqRes = FAQS(
-                faq = res['group'][0]
-              , freq = len(res['group'])
+    stageFaq = StagingFAQS(
+                thread_id = thread.thread_id
+              , faq = encodedJson['faq']
             )
-        print (res['group'])
-        session.add(faqRes)
-    
-    for staging_faq in stagingFaqs:
-        staging_faq.processed_flag = True
+    print (res)
+    session.add(stageFaq)
     session.commit()  
-
     
-def run_faq_consolidation():
-    stagingFaqs = session.query(StagingFAQS).filter_by(processed_flag = False).limit(20).all()
-    update_faq(stagingFaqs)  
+def run_faq_analysis():
+    threads = session.query(EmailThread).all()  # Fetch all threads
+    for thread in threads:
+        update_staging_faq(thread)  # Update sentiment for each thread
 
 def job():
-    print(f"Running consolidating FAQs at {datetime.now()}")
-    run_faq_consolidation()
+    print(f"Running sentiment analysis at {datetime.now()}")
+    run_faq_analysis()
 
 if __name__ == '__main__':
     schedule.every(5).hours.do(job)
     job()
     while True:
         schedule.run_pending()
-        time.sleep(60)  # S
+        time.sleep(60)  # Sleep for a minute between checks
