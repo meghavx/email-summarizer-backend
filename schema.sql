@@ -2419,14 +2419,15 @@ CREATE TABLE faqs (
   created_at timestamp DEFAULT now(),
   updated_at timestamp DEFAULT now()
 );
- 
+
 CREATE TABLE sop_gap_coverage (
-  coverage_id SERIAL PRIMARY KEY,
-  category_id INTEGER NOT NULL REFERENCES query_categories (category_id),
-  sop_doc_id INTEGER NOT NULL REFERENCES sop_document (doc_id),
-  gap_type GAP_CATEGORY NOT NULL, 
-  created_at timestamp DEFAULT now(),
-  updated_at timestamp DEFAULT now()
+	coverage_id serial4 NOT NULL,
+	sop_doc_id int NOT null references sop_document(doc_id) on delete cascade,
+	faq_id int not null references faqs(faq_id) on delete  cascade,
+	gap_type public."gap_category" NOT NULL,
+	created_at timestamp DEFAULT now() NULL,
+	updated_at timestamp DEFAULT now() NULL,
+	CONSTRAINT sop_gap_coverage_pkey PRIMARY KEY (coverage_id)
 );
 
 CREATE TABLE staging_sop_gap_coverage (

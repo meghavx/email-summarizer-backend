@@ -107,7 +107,7 @@ class Category(db.Model):
 class SOPGapCoverage(db.Model):
     __tablename__ = 'sop_gap_coverage'
     coverage_id = db.Column(db.Integer, primary_key=True)
-    category_id = db.Column(db.Integer, db.ForeignKey('query_categories.category_id'), nullable=False)
+    faq_id = db.Column(db.Integer, db.ForeignKey('faqs.faq_id'), nullable=False)
     sop_doc_id = db.Column(db.Integer, db.ForeignKey('sop_document.doc_id'), nullable=False)
     gap_type = db.Column(db.Enum('Fully Covered', 'Partially Covered', 'Inaccurately Covered', 'Ambiguously Covered', 'Not Covered', name='gap_category'), nullable=False)
     created_at = db.Column(db.TIMESTAMP , default = db.func.now())
@@ -488,18 +488,18 @@ def get_category_gaps(doc_id):
         count_dict[gap_type] = count
     gaps = (
         db.session.query(
-            Category.category_name,
+            FAQS.faq,
             SOPGapCoverage.gap_type,
             SOPGapCoverage.coverage_id
         )
-        .join(SOPGapCoverage, Category.category_id == SOPGapCoverage.category_id)
+        .join(SOPGapCoverage, FAQS.faq_id == SOPGapCoverage.faq_id)
         .filter(SOPGapCoverage.sop_doc_id == doc_id)
         .order_by(SOPGapCoverage.coverage_id)  # You can change the ordering here
         .all()
     )
     gap_list = [
         {
-            "category": gap.category_name,
+            "faq": gap.faq,
             "gap_type": gap.gap_type,
             "id": gap.coverage_id
         }
