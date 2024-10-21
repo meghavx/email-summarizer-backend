@@ -27,6 +27,8 @@ echo "Inserting data into database..."
 docker cp schema.sql email_summarizer_db:/
 docker exec -it email_summarizer_db psql -U $DBUSERNAME -d $DBNAME -c "\i schema.sql"
 
+python3 insert_doc.py
+
 # Run the Python script
 echo "Running Python script..."
 python3 app.py
