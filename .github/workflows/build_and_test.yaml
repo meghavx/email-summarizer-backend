@@ -8,8 +8,12 @@ on:
     branches:
       - main
 
+env:
+  OPENAI_API_KEY : ${{secrets.OPENAI_API_KEY}}
+
 jobs:
   test:
+    environment: test-env
     runs-on: ubuntu-latest
 
     services:
@@ -30,6 +34,12 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+  
+    - name: Install ollama
+      run: |
+        curl -fsSL https://ollama.com/install.sh | sh
+        ollama
+        ollama pull llama3.2
 
     - name: Set up Python
       uses: actions/setup-python@v5
