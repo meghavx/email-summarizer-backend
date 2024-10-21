@@ -62,7 +62,7 @@ jobs:
       env:
         PGPASSWORD: qwerty
       run: |
-        psql -h localhost -U ruchita -d poc -f path/to/schema.sql
+        psql -h localhost -U ruchita -d poc -f schema.sql
 
     - name: Insert SOP PDF
       env:
