@@ -3,7 +3,7 @@ from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from sqlalchemy import Enum, desc
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 import io
 from gpt_ai_functions import get_answer_from_email,get_summary_response
 from llama_ai_functions import llama_get_summary_response, llam_get_answer_from_email
@@ -21,7 +21,7 @@ CORS(app)
 BUSINESS_SIDE_NAME = "Support Team"
 BUSINESS_SIDE_EMAIL = "support@business.com"
 
-AI_MODEL = "gpt" # "gpt" "llama"
+AI_MODEL = "llama" # "gpt" "llama"
 
 class EmailThread(db.Model):
     __tablename__ = 'threads'
@@ -404,7 +404,6 @@ def store_email_document_(thread_id, doc_id):
           reverse=True
       )
       latest_email = sorted_emails[0]
-      print ("latest_email",latest_email.email_content)
       
       discussion_thread = ""
       for email in sorted_emails:
@@ -518,20 +517,9 @@ def get_faqs_with_freq():
     faq_list = [{"faq": faq.faq, "freq": faq.freq} for faq in faqs]
     return jsonify(faq_list)
 
-
-# [ EADB-6 | 17th October 2024 ]
-# Making use of staging table from new ERD
-
-# Saves FAQs and Gap Coverage Response to database
-# AI Teams logic goes here
 @app.route('/save_ai_response', methods=['POST'])
 def save_ai_response():
-   
-    # Saving the response from AI Team here
-
     return jsonify({'message': 'AI response saved successfully'}), 201
-
-
 
 def job():
     print(f"Running FAQ aggregator and Gap coverage analysor at {datetime.now()}")
