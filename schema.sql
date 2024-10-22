@@ -10,7 +10,8 @@ CREATE TABLE emails (
   email_received_at TIMESTAMP,
   email_subject VARCHAR(100) NOT NULL,
   email_content TEXT NOT NULL,
-  is_resolved Boolean DEFAULT true
+  is_resolved Boolean DEFAULT true,
+  coverage_percentage INT
 );
 
 CREATE TABLE threads (

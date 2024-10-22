@@ -6,9 +6,33 @@ from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
 from dotenv import load_dotenv
 from openai import OpenAI
+import json
+
 
 load_dotenv()
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+
+def findFirstOccurance(text,ch):
+    for i in range(0,len(text)):
+        if(text[i] == ch):
+            return i
+    return None
+
+def findLastOccurance(text,ch):
+    lastIdx = -1
+    for i in range(0, len(text)):
+        if(text[i] == ch):
+            lastIdx = i
+    if (lastIdx == -1):
+        return None
+    return lastIdx
+
+def get_string_between_braces(text):
+    n1 = findFirstOccurance(text,'{')
+    n2 = findLastOccurance(text,'}')
+    if (not n1 and not n2):
+        return None
+    return text[n1:(n2+1)]
 
 text_splitter = RecursiveCharacterTextSplitter(
     separators=['\n\n', '\n', '.', ','],
@@ -28,23 +52,32 @@ def get_answer_from_email(email_subject, email_message, sender_name, doc_content
     retriever=vector_store.as_retriever(search_kwargs={"k": 3})  # Increased k for broader search
     )
 
+    json_format = "{\"sop_based_email_response\": \"<email response>\" , \"sop_coverage_percentage\": \"<percentage>%\" }"
     prompt = f"""
-    You are a helpful assistant that generates responses based on company SOP guidelines.
-    The query is an email with the subject: "{email_subject}".
-    Below is the email discussion asking about a specific process related to the company SOP.
-    generate a formal and professional response to this email, addressing each point appropriately.
-    Refer yourself as ABC support at the end of the mail.
+    You are a helpful assistant that generates responses based on company SOP guidelines. For the given email discussion:
+    - generate a formal and professional response to this email, addressing each point appropriately.
+    - Refer yourself as ABC support at the end of the mail.
+    - Make sure to refer to the appropriate procedures mentioned in the subject and provide a comprehensive response,
+    - including step-by-step guidelines, documentation, and any relevant timelines. Don't include the subject line in mail.
+    - Do not mention subject in the response!
+    - Also generate a percentage for how sufficient is the SOP document to generate an answer. Where 0% = topic not covered at all, 100% = topic is fully covered. 
+    - Your output should be a JSON object that matches the following schema:
+        {json_format}
+    - Make sure it is a valid JSON object.
+    - Use \n instead of whitespace or newline.
+    - Never return anything other than a JSON object.
 
-    Email sender name: {sender_name}
-    Email discussion: {email_message}
-
-    Make sure to refer to the appropriate procedures mentioned in the subject and provide a comprehensive response,
-    including step-by-step guidelines, documentation, and any relevant timelines. Don't add subject line in the response.
-    
+    Below are the emails asking about a specific process related to the company SOP.
+    Email exchanges: 
+    {email_message}
     """
-    answer = qa.run(prompt)
-    print ("got answer",answer)
-    return answer
+    response_from_llm  = get_string_between_braces(qa.run(prompt))
+    print("json response", response_from_llm)
+    if (not response_from_llm):
+        return None
+    decodedResult = json.loads(response_from_llm)
+    percentage = int(decodedResult['sop_coverage_percentage'].replace('%','').strip())
+    return (decodedResult['sop_based_email_response'], percentage)
 
 def get_summary_response(discussion_thread):
     completion = client.chat.completions.create(

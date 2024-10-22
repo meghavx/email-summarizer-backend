@@ -21,7 +21,7 @@ CORS(app)
 BUSINESS_SIDE_NAME = "Support Team"
 BUSINESS_SIDE_EMAIL = "support@business.com"
 
-AI_MODEL = "llama" # "gpt" "llama"
+AI_MODEL = "gpt" # "gpt" "llama"
 
 class EmailThread(db.Model):
     __tablename__ = 'threads'
@@ -42,6 +42,7 @@ class Email(db.Model):
     email_subject = db.Column(db.String(100), nullable=False)
     email_content = db.Column(db.Text, nullable=True)
     is_resolved = db.Column(db.Boolean, default=True)
+    coverage_percentage = db.Column(db.Integer)
     email_thread = db.relationship('EmailThread', backref=db.backref('emails', lazy=True))
 
 class Summary(db.Model):
@@ -262,7 +263,8 @@ def get_all_threads():
             'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
             'content': email.email_content,
             'isOpen': False,
-            'isResolved': email.is_resolved
+            'isResolved': email.is_resolved,
+            'coveragePercentage': email.coverage_percentage
         } for i,email in  enumerate(sorted_emails)]
         
         thread_list.append({
@@ -412,7 +414,7 @@ def store_email_document_(thread_id, doc_id):
         email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
         discussion_thread += email_entry
 
-      content = sop_email(email_thread.thread_topic,discussion_thread,latest_email.sender_name,document)
+      (content, coverage_percentage) = sop_email(email_thread.thread_topic,discussion_thread,latest_email.sender_name,document)
       customerName, customerEmail = latest_email.sender_name, latest_email.sender_email
       
       new_email = Email(
@@ -424,7 +426,8 @@ def store_email_document_(thread_id, doc_id):
           receiver_email = customerName,
           receiver_name = customerEmail,
           email_received_at=db.func.now(),  # Set timestamp to now
-          is_resolved = False
+          is_resolved = False,
+          coverage_percentage = coverage_percentage
       )
       db.session.add(new_email)
       db.session.commit()
