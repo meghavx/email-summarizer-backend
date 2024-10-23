@@ -61,7 +61,7 @@ def test_update_email(client):
     assert 'success' in resp.get_json()
 
 def test_summarization(client):
-    thread_id = 1
+    thread_id = 12345
     resp = client.post(f'/summarize/{thread_id}')
     assert resp.status_code == 200
 
@@ -72,16 +72,16 @@ def test_check_new_emails(client):
 
 def test_store_email_document_(client):
     with client.application.app_context():
-        store_email_document_helper(1, 1)
+        store_email_document_helper(12345, 1)
         # Verify new email creation
-        email = Email.query.filter_by(thread_id = 1).order_by(Email.email_record_id.desc()).first()
+        email = Email.query.filter_by(thread_id = 12345).order_by(Email.email_record_id.desc()).first()
         assert email is not None
         assert email.sender_email == client.application.config['BUSINESS_SIDE_EMAIL']
         assert email.sender_name == client.application.config['BUSINESS_SIDE_NAME']
         assert email.is_resolved is False
 
 def test_store_thread_and_document(client):
-    data = { 'thread_id' : 1, 'doc_id' : 1 }
+    data = { 'thread_id' : 12345, 'doc_id' : 1 }
     resp = client.post('/store_thread_and_document', json=data)
     assert resp.status_code == 200
 

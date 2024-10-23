@@ -72,7 +72,6 @@ def get_answer_from_email(email_subject, email_message, sender_name, doc_content
     {email_message}
     """
     r = qa.run(prompt)
-    print ("r",r)
     response_from_llm  = get_string_between_braces(r)
     print("json response", response_from_llm)
     decodedResult = json.loads(response_from_llm)
