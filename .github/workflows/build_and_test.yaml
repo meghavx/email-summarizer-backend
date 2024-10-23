@@ -62,13 +62,13 @@ jobs:
       env:
         PGPASSWORD: qwerty
       run: |
-        psql -h localhost -U ruchita -d poc -f schema.sql
+        psql -h localhost -U ruchita -d poc -f ./scripts/schema.sql
 
     - name: Insert SOP PDF
       env:
         PGPASSWORD: qwerty
       run: |
-        python insert_doc.py
+        python ./scripts/insert_doc.py
 
     - name: Run tests
       env:
