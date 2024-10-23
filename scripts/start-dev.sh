@@ -24,11 +24,11 @@ while ! docker exec -it email_summarizer_db psql -U $DBUSERNAME -d $DBNAME  -c "
 
 # Insert data from schema.sql
 echo "Inserting data into database..."
-docker cp ./scripts/schema.sql email_summarizer_db:/
+docker cp ./schema.sql email_summarizer_db:/
 docker exec -it email_summarizer_db psql -U $DBUSERNAME -d $DBNAME -c "\i schema.sql"
 
-python3 ./scripts/insert_doc.py
+python3 ./insert_doc.py
 
 # Run the Python script
 echo "Running Python script..."
-python3 run.py
+python3 ../run.py
