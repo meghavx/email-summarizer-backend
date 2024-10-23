@@ -36,7 +36,6 @@ Type "help" for help.
 poc=# 
 
 ```
-
 ### To Setup LLAMA Model 
 
 Download the tool from [here](https://ollama.com)
@@ -51,17 +50,9 @@ $ ollama run llama3.2
 ### to run the application
 
 ```bash
-$ python3 app.py
+$ python3 run.py
 ```
 
-To run_sentiment_analysis2.py.
-do 
-$ pip3 install -r requirements.txt
+To run sentiment analysis:
 
-and then run 
-
-$ python3 download_sentiment_dep.py
-
-then you can run:
-
-$ python3 run_sentiment_analysis2.py
+$ make run_sentiment_analysis_gpt

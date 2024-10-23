@@ -1,14 +1,17 @@
 import pytest
-from app import app as flask_app
+from app import create_app
 import io
 from datetime import datetime,timezone 
+from app.routes.ai_routes import store_email_document_helper
+from app.models import Email
 
 @pytest.fixture
 def app():
-    flask_app.config['TESTING'] = True
-    flask_app.config['BUSINESS_SIDE_NAME'] = "Support Team"
-    flask_app.config['BUSINESS_SIDE_EMAIL'] = "support@business.com"
-    yield flask_app
+    app = create_app()
+    app.config['TESTING'] = True
+    app.config['BUSINESS_SIDE_NAME'] = "Support Team"
+    app.config['BUSINESS_SIDE_EMAIL'] = "support@business.com"
+    return app
 
 @pytest.fixture
 def client(app):
@@ -69,13 +72,12 @@ def test_check_new_emails(client):
 
 def test_store_email_document_(client):
     with client.application.app_context():
-        from app import store_email_document_, Email
-        store_email_document_(1, 1)
+        store_email_document_helper(1, 1)
         # Verify new email creation
         email = Email.query.filter_by(thread_id = 1).order_by(Email.email_record_id.desc()).first()
         assert email is not None
-        assert email.sender_email == flask_app.config['BUSINESS_SIDE_EMAIL']
-        assert email.sender_name == flask_app.config['BUSINESS_SIDE_NAME']
+        assert email.sender_email == client.application.config['BUSINESS_SIDE_EMAIL']
+        assert email.sender_name == client.application.config['BUSINESS_SIDE_NAME']
         assert email.is_resolved is False
 
 def test_store_thread_and_document(client):

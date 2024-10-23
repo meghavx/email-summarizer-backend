@@ -71,11 +71,13 @@ def get_answer_from_email(email_subject, email_message, sender_name, doc_content
     Email exchanges: 
     {email_message}
     """
-    response_from_llm  = get_string_between_braces(qa.run(prompt))
+    r = qa.run(prompt)
+    print ("r",r)
+    response_from_llm  = get_string_between_braces(r)
     print("json response", response_from_llm)
-    if (not response_from_llm):
-        return None
     decodedResult = json.loads(response_from_llm)
+    if (not decodedResult):
+        return None
     percentage = int(decodedResult['sop_coverage_percentage'].replace('%','').strip())
     return (decodedResult['sop_based_email_response'], percentage)
 
