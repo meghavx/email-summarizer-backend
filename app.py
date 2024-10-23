@@ -181,7 +181,7 @@ def get_pdf_content_by_doc_id(doc_id):
     try:
         sop_document = SOPDocument.query.filter_by(doc_id=doc_id).one()
         if sop_document == None:
-            pass # TODO: throw exception here
+            raise Exception("Document not found :(")
         pdf_file = io.BytesIO(sop_document.doc_content)
         reader = PdfReader(pdf_file)
         pdf_content = " ".join([page.extract_text() for page in reader.pages])
@@ -369,7 +369,8 @@ def sop_email(thread_topic, discussion_thread, sender_name, doc):
         return get_answer_from_email(thread_topic, discussion_thread, sender_name, doc)
 
 def store_email_document_(thread_id, doc_id):
-    with app.app_context():
+    try:
+      with app.app_context():
         # Fetch all valid email thread based on thread_id
         email_thread = EmailThread.query.get(thread_id)
         if not email_thread:
@@ -396,8 +397,10 @@ def store_email_document_(thread_id, doc_id):
             email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
             discussion_thread += email_entry
 
-        (content, coverage_percentage) = sop_email(email_thread.thread_topic,
-                                                   discussion_thread, latest_email.sender_name, document)
+        res = sop_email(email_thread.thread_topic, discussion_thread, latest_email.sender_name, document)
+        if (not res):
+            raise Exception("Something went wrong with LLM response")
+        (content, coverage_percentage) = res
         customerName, customerEmail = latest_email.sender_name, latest_email.sender_email
 
         new_email = Email(
@@ -414,6 +417,10 @@ def store_email_document_(thread_id, doc_id):
         )
         db.session.add(new_email)
         db.session.commit()
+    except Exception as e:
+        print ("Exception occurred during SOP based email response: ", e)
+        return None
+
 
 @app.route('/store_thread_and_document', methods=['POST'])
 def store_email_document():
