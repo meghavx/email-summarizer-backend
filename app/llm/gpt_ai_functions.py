@@ -52,7 +52,12 @@ def get_answer_from_email(email_subject, email_message, sender_name, doc_content
     retriever=vector_store.as_retriever(search_kwargs={"k": 3})  # Increased k for broader search
     )
 
-    json_format = "{\"sop_based_email_response\": \"<email response>\" , \"sop_coverage_percentage\": \"<percentage>%\" }"
+    json_format = """
+        {\"sop_based_email_response\": \"<email response>\" ,
+         \"sop_coverage_percentage\": \"<percentage>%\", 
+         \"description_for_coverage_percentage\": \"<description>\" }, 
+        \"FAQ_based_on_email\":\"<A_generalized_FAQ_question_theat_summarizes_email_discussion>\"
+        """
     prompt = f"""
     You are a helpful assistant that generates responses based on company SOP guidelines. For the given email discussion:
     - generate a formal and professional response to this email, addressing each point appropriately.
@@ -71,6 +76,7 @@ def get_answer_from_email(email_subject, email_message, sender_name, doc_content
     Email exchanges: 
     {email_message}
     """
+    print ("email_message",email_message)
     r = qa.run(prompt)
     response_from_llm  = get_string_between_braces(r)
     print("json response", response_from_llm)
@@ -78,7 +84,9 @@ def get_answer_from_email(email_subject, email_message, sender_name, doc_content
     if (not decodedResult):
         return None
     percentage = int(decodedResult['sop_coverage_percentage'].replace('%','').strip())
-    return (decodedResult['sop_based_email_response'], percentage)
+    coverage_description = decodedResult['description_for_coverage_percentage']
+    faq = decodedResult['FAQ_based_on_email']
+    return (decodedResult['sop_based_email_response'], percentage, coverage_description, faq)
 
 def get_summary_response(discussion_thread):
     completion = client.chat.completions.create(

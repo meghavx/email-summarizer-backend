@@ -39,7 +39,7 @@ def store_email_document_helper(thread_id: int, doc_id: int):
         res = sop_email(email_thread.thread_topic, discussion_thread, latest_email.sender_name, document)
         if (not res):
             raise Exception("Something went wrong with LLM response")
-        (content, coverage_percentage) = res
+        (content, coverage_percentage, coverage_description, faq) = res
         customerName, customerEmail = latest_email.sender_name, latest_email.sender_email
 
         new_email = Email(
@@ -52,7 +52,8 @@ def store_email_document_helper(thread_id: int, doc_id: int):
             receiver_name = customerEmail,
             email_received_at = db.func.now(), 
             is_resolved = False,
-            coverage_percentage = coverage_percentage
+            coverage_percentage = coverage_percentage,
+            coverage_description = coverage_description
         )
         db.session.add(new_email)
         db.session.commit()
@@ -154,6 +155,7 @@ def get_category_gaps(doc_id):
 @app.get('/get_faqs_with_freq')
 def get_faqs_with_freq():
     faqs = FAQS.query.with_entities(
-        FAQS.faq, FAQS.freq).order_by(FAQS.freq.desc()).all()
-    faq_list = [{"faq": faq.faq, "freq": faq.freq} for faq in faqs]
+        FAQS.faq, FAQS.freq, FAQS.coverage_percentage).order_by(FAQS.freq.desc()).all()
+    print(faqs)
+    faq_list = [{"faq": faq.faq, "freq": faq.freq, "coverage_percentage": faq.coverage_percentage} for faq in faqs]
     return jsonify(faq_list)

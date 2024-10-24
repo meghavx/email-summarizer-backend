@@ -102,7 +102,8 @@ def analyze_coverage_for_FAQ(mainFaq, doc_content):
     Please evaluate how much of the following question is covered by the SOP and provide a detailed reason for your assessment.
     Inquiry: "{mainFaq.faq}"
     
-    Your answer must include a coverage type (Fully Covered, Partially Covered, Ambiguously Covered, Not Covered) followed by a detailed explanation of why you assigned this score.
+    Your answer must include a coverage type (Fully Covered, Partially Covered, Ambiguously Covered, 
+                                              Not Covered) followed by a detailed explanation of why you assigned this score.
     For example:
     - If it's Fully Covered, explain why.
     - If it's Partially Covered, mention what's missing.

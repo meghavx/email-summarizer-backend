@@ -36,7 +36,8 @@ def get_all_threads():
             'content': email.email_content,
             'isOpen': False,
             'isResolved': email.is_resolved,
-            'coveragePercentage': email.coverage_percentage
+            'coveragePercentage': email.coverage_percentage,
+            'coverageDescription' : email.coverage_description
         } for i, email in enumerate(sorted_emails)]
 
         thread_list.append({

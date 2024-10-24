@@ -22,6 +22,7 @@ class Email(db.Model):
     email_content = db.Column(db.Text, nullable=True)
     is_resolved = db.Column(db.Boolean, default=True)
     coverage_percentage = db.Column(db.Integer)
+    coverage_description = db.Column(db.Text)
     email_thread = db.relationship(
         'EmailThread', backref=db.backref('emails', lazy=True))
 
@@ -103,6 +104,7 @@ class FAQS(db.Model):
     faq_id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     faq = db.Column(db.Text, nullable=False)
     freq = db.Column(db.Integer, nullable=False, default=0)
+    coverage_percentage = db.Column(db.Integer)
     created_at = db.Column(db.TIMESTAMP, default=db.func.now())
     updated_at = db.Column(
         db.TIMESTAMP, default=db.func.now(), onupdate=db.func.now())

@@ -46,6 +46,7 @@ class FAQS(Base):
     faq_id = Column(Integer, primary_key=True, autoincrement=True)
     faq = Column(Text, nullable=False)
     freq = Column(Integer, nullable=False, default=0)
+    coverage_percentage = Column(Integer)
     created_at = Column(TIMESTAMP, default=func.now())
     updated_at = Column(TIMESTAMP, default=func.now(), onupdate=func.now())
     __table_args__ = (
@@ -69,6 +70,8 @@ class StagingFAQS(Base):
     thread_id = Column(Integer, ForeignKey(
         'threads.thread_id'), nullable=False)
     faq = Column(Text, nullable=False)
+    coverage_percentage = Column(Integer)
+    coverage_description = Column(Text)
     processed_flag = Column(Boolean, default=False)
     created_at = Column(TIMESTAMP, default=func.now())
     updated_at = Column(TIMESTAMP, default=func.now(), onupdate=func.now())
@@ -113,7 +116,15 @@ def update_main_faq(mainFaqs):
         i += 1
     mainFaqString += "]"
     print(mainFaqString)
-    jsonFormat = "{ \"result\" : [{\"group\": [\"question1\",\"question2\"] }] }"
+    jsonFormat = """
+        { \"result\" : [
+                {
+                \"group\": [\"question1\",\"question2\"],
+                \"generalize_question\":  \"<generalize_faq_of_all_questions_from_group>\"
+                }
+            ] 
+        }
+        """
     prompt = f"""
         From the below list, group the questions which are contextually simialar to each other:
         faqs = {mainFaqString}
@@ -137,23 +148,25 @@ def update_main_faq(mainFaqs):
 
         main_faq = faq_group[0]  # Use the first FAQ as the main FAQ
         total_count = 0
+        total_percentage = 0
 
         faqs = session.query(FAQS).filter(FAQS.faq.in_(faq_group)).all()
         for faq in faqs:
             total_count += faq.freq
+            total_percentage += faq.coverage_percentage
 
         main_faq_record = session.query(FAQS).filter_by(faq=main_faq).first()
 
         if main_faq_record:
             main_faq_record.freq = total_count
+            main_faq_record.faq = group['generalize_question']
+            main_faq_record.coverage_percentage = total_percentage / len(faq_group)
 
         for faq in faqs:
             if faq.faq != main_faq:
                 session.delete(faq)
 
     session.commit()
-
-
 
 def update_faq(stagingFaqs):
     stagingFaqString = "[\n"
@@ -165,7 +178,15 @@ def update_faq(stagingFaqs):
 
     stagingFaqString += "\n]\n"
 
-    jsonFormat = "{ \"result\" : [{\"group\": [\"question1\",\"question2\"] }] }"
+    jsonFormat = """
+        { \"result\" : [
+                {
+                \"group\": [\"question1\",\"question2\"],
+                \"generalize_question\":  \"<Any_one_of_faq_from_group_that_shows_intent_of_group>\"
+                }
+            ] 
+        }
+        """
     prompt = f"""
         From the below list, group the questions which are contextually simialar to each other:
         faqs = {stagingFaqString}
@@ -176,18 +197,21 @@ def update_faq(stagingFaqs):
     res = ai_msg.content
     print("res", res)
     jsonRes = get_string_between_braces(res)
-    print("jsonRes", jsonRes)
     if (not jsonRes):
         return
     encodedJson = json.loads(jsonRes)
     resultList = encodedJson['result']
     for res in resultList:
-        faqRes = FAQS(
-            faq=res['group'][0], freq=len(res['group'])
-        )
-        print(res['group'])
-        session.add(faqRes)
+        stagingFaqs = session.query(StagingFAQS).filter(StagingFAQS.faq.in_(res['group'])).all()
+        total_percentage = 0
+        for faq in stagingFaqs:
+            total_percentage += faq.coverage_percentage
 
+        print ("total percentage", total_percentage)
+        faqRes = FAQS(
+            faq=res['generalize_question'], freq=len(res['group']), coverage_percentage = total_percentage / len(res['group'])
+        )
+        session.add(faqRes)
     for staging_faq in stagingFaqs:
         staging_faq.processed_flag = True
     session.commit()

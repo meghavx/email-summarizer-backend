@@ -11,7 +11,8 @@ CREATE TABLE emails (
   email_subject VARCHAR(100) NOT NULL,
   email_content TEXT NOT NULL,
   is_resolved Boolean DEFAULT true,
-  coverage_percentage INT
+  coverage_percentage INT,
+  coverage_description text
 );
 
 CREATE TABLE threads (
@@ -2414,6 +2415,7 @@ CREATE TABLE faqs (
   faq_id SERIAL PRIMARY KEY, 
   faq TEXT NOT NULL, 
   freq INTEGER NOT NULL DEFAULT 0 CONSTRAINT chk_positive CHECK (freq >= 0),
+  coverage_percentage Integer,
   created_at timestamp DEFAULT now(),
   updated_at timestamp DEFAULT now()
 );
@@ -2443,6 +2445,8 @@ CREATE TABLE staging_faqs (
     staging_faq_id SERIAL PRIMARY KEY,
     thread_id INTEGER NOT NULL REFERENCES threads (thread_id),
     faq TEXT NOT NULL,
+    coverage_percentage int,
+    coverage_description text,
     processed_flag BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT now(),
     updated_at TIMESTAMP DEFAULT now()

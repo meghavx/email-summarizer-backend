@@ -34,7 +34,7 @@ def llama_get_summary_response(discussion_thread):
     return (response['message']['content'])
 
 def llam_get_answer_from_email(sop_content, discussion_thread):
-    json_format = "{\"sop_based_email_response\": \"<email response>\" , \"sop_coverage_percentage\": \"<percentage>%\" }"
+    json_format = "{\"sop_based_email_response\": \"<email response>\" , \"sop_coverage_percentage\": \"<percentage>%\", \"description_for_coverage_percentage\": \"<description>\" }"
     prompt = f"""
     SOP:
     {sop_content}
