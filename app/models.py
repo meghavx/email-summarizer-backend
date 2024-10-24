@@ -105,6 +105,7 @@ class FAQS(db.Model):
     faq = db.Column(db.Text, nullable=False)
     freq = db.Column(db.Integer, nullable=False, default=0)
     coverage_percentage = db.Column(db.Integer)
+    coverage_description = db.Column(db.Text)
     created_at = db.Column(db.TIMESTAMP, default=db.func.now())
     updated_at = db.Column(
         db.TIMESTAMP, default=db.func.now(), onupdate=db.func.now())

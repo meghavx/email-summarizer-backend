@@ -47,6 +47,7 @@ class FAQS(Base):
     faq = Column(Text, nullable=False)
     freq = Column(Integer, nullable=False, default=0)
     coverage_percentage = Column(Integer)
+    coverage_description = Column(Text)
     created_at = Column(TIMESTAMP, default=func.now())
     updated_at = Column(TIMESTAMP, default=func.now(), onupdate=func.now())
     __table_args__ = (
@@ -181,7 +182,7 @@ def update_faq(stagingFaqs):
     jsonFormat = """
         { \"result\" : [
                 {
-                \"group\": [\"question1\",\"question2\"],
+                \"group\": [\"question1\",\"question2\",...,\"questionN\"],
                 \"generalize_question\":  \"<Any_one_of_faq_from_group_that_shows_intent_of_group>\"
                 }
             ] 
@@ -204,14 +205,18 @@ def update_faq(stagingFaqs):
     for res in resultList:
         stagingFaqs = session.query(StagingFAQS).filter(StagingFAQS.faq.in_(res['group'])).all()
         total_percentage = 0
+        coverageDescription_ = None
         for faq in stagingFaqs:
             total_percentage += faq.coverage_percentage
+            coverageDescription_ = faq.coverage_description
 
         print ("total percentage", total_percentage)
         faqRes = FAQS(
-            faq=res['generalize_question'], freq=len(res['group']), coverage_percentage = total_percentage / len(res['group'])
+            faq=res['generalize_question'], freq=len(res['group']), coverage_percentage = total_percentage / len(res['group']),
+            coverage_description = coverageDescription_
         )
         session.add(faqRes)
+
     for staging_faq in stagingFaqs:
         staging_faq.processed_flag = True
     session.commit()

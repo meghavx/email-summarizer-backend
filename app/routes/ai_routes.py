@@ -155,7 +155,7 @@ def get_category_gaps(doc_id):
 @app.get('/get_faqs_with_freq')
 def get_faqs_with_freq():
     faqs = FAQS.query.with_entities(
-        FAQS.faq, FAQS.freq, FAQS.coverage_percentage).order_by(FAQS.freq.desc()).all()
+        FAQS.faq, FAQS.freq, FAQS.coverage_percentage, FAQS.coverage_description).order_by(FAQS.freq.desc()).all()
     print(faqs)
-    faq_list = [{"faq": faq.faq, "freq": faq.freq, "coverage_percentage": faq.coverage_percentage} for faq in faqs]
+    faq_list = [{"faq": faq.faq, "freq": faq.freq, "coverage_percentage": faq.coverage_percentage, "coverageDescription": faq.coverage_description} for faq in faqs]
     return jsonify(faq_list)

@@ -138,8 +138,9 @@ def update_staging_faq(thread, doc):
     json_format = """
         {\"sop_based_email_response\": \"<email response>\" ,
          \"sop_coverage_percentage\": \"<percentage>%\", 
-         \"description_for_coverage_percentage\": \"<description>\" }, 
+         \"description_for_coverage_percentage\": \"<description>\" , 
         \"FAQ_based_on_email\":\"<A_generalized_FAQ_question_theat_summarizes_email_discussion>\"
+         }
         """
     prompt = f"""
     You are a helpful assistant that generates responses based on company SOP guidelines. For the given email discussion:
@@ -165,6 +166,8 @@ def update_staging_faq(thread, doc):
     if (not jsonRes):
         return
     encodedJson = json.loads(jsonRes)
+    if((not encodedJson['sop_coverage_percentage']) and (not encodedJson['FAQ_based_on_email']) and (not encodedJson['description_for_coverage_percentage'])):
+        return
     percentage = int(encodedJson['sop_coverage_percentage'].replace('%','').strip())
     stageFaq = StagingFAQS(
                 thread_id = thread.thread_id

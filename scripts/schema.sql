@@ -2231,6 +2231,7 @@ CREATE TABLE faqs (
   faq TEXT NOT NULL, 
   freq INTEGER NOT NULL DEFAULT 0 CONSTRAINT chk_positive CHECK (freq >= 0),
   coverage_percentage Integer,
+  coverage_description text,
   created_at timestamp DEFAULT now(),
   updated_at timestamp DEFAULT now()
 );
