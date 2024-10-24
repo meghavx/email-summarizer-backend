@@ -2,7 +2,7 @@ import psycopg2
 import binascii
 
 # Path to the binary content file
-txt_file_path = "../uploads/binary_content.txt"
+txt_file_path = "./uploads/binary_content.txt"
 
 # Read the binary content
 with open(txt_file_path, "rb") as txt_file:
