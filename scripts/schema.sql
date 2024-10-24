@@ -54,7 +54,7 @@ CREATE TYPE GAP_CATEGORY AS ENUM (
 
 INSERT INTO emails (sender_email, sender_name, receiver_email, receiver_name, thread_id, email_received_at, email_subject, email_content)
 VALUES
-  ('customer8@example.com', 'Alice Smith', 'support@business.com', 'Support Team', 12375, '2024-08-19 10:30:00', 'Damaged Product Shipment',
+  ('customer8@example.com', 'Alice Smith', 'support@business.com', 'Support Team', 12361, '2024-08-19 10:30:00', 'Damaged Product Shipment',
    'Dear Support Team,
 
 I am writing to report that a recent shipment of Product A (Order ID: 123456) arrived with several damaged units. Upon inspection, we found that 10 units were damaged beyond repair.
@@ -68,7 +68,7 @@ Thank you for your prompt attention to this matter.
 Best regards,
      Alice Smith'),
 
-  ('support@business.com', 'Support Team', 'customer8@example.com', 'Alice Smith', 12375, '2024-08-19 11:00:00', 'Damaged Product Shipment',
+  ('support@business.com', 'Support Team', 'customer8@example.com', 'Alice Smith', 12361, '2024-08-19 11:00:00', 'Damaged Product Shipment',
    'Dear Alice Smith,
 
 Thank you for reporting the damaged goods in your recent shipment of Product A. We apologize for any inconvenience this may have caused.
@@ -82,7 +82,7 @@ Thank you for your cooperation.
 Best regards,
       Support Team'),
 
-  ('customer8@example.com', 'Alice Smith', 'support@business.com', 'Support Team', 12375, '2024-08-19 11:30:00', 'Damaged Product Shipment',
+  ('customer8@example.com', 'Alice Smith', 'support@business.com', 'Support Team', 12361, '2024-08-19 11:30:00', 'Damaged Product Shipment',
    'Dear Support Team,
 
 I have attached the original purchase order and packing list for your reference.
@@ -94,7 +94,7 @@ Thank you for your assistance.
 Best regards,
       Alice Smith'),
 
-  ('support@business.com', 'Support Team', 'customer8@example.com', 'Alice Smith', 12375, '2024-08-19 12:00:00', 'Damaged Product Shipment',
+  ('support@business.com', 'Support Team', 'customer8@example.com', 'Alice Smith', 12361, '2024-08-19 12:00:00', 'Damaged Product Shipment',
    'Dear Alice Smith,
 
 We have received your additional documents and are currently processing your claim for the damaged Product A (Order ID: 123456).
@@ -106,7 +106,7 @@ Thank you for your patience and understanding.
 Best regards,
       Support Team'),
 
-  ('customer8@example.com', 'Alice Smith', 'support@business.com', 'Support Team', 12375, '2024-08-19 12:30:00', 'Damaged Product Shipment',
+  ('customer8@example.com', 'Alice Smith', 'support@business.com', 'Support Team', 12361, '2024-08-19 12:30:00', 'Damaged Product Shipment',
    'Dear Support Team,
 
 I am following up on my previous email regarding the damaged Product A (Order ID: 123456).
