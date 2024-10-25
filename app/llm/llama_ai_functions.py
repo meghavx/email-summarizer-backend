@@ -34,7 +34,13 @@ def llama_get_summary_response(discussion_thread):
     return (response['message']['content'])
 
 def llam_get_answer_from_email(sop_content, discussion_thread):
-    json_format = "{\"sop_based_email_response\": \"<email response>\" , \"sop_coverage_percentage\": \"<percentage>%\", \"description_for_coverage_percentage\": \"<description>\" }"
+    json_format = """
+        {\"sop_based_email_response\": \"<email response>\" ,
+         \"sop_coverage_percentage\": \"<percentage>%\", 
+         \"description_for_coverage_percentage\": \"<description>\" }, 
+        \"FAQ_based_on_email\":\"<A_generalized_FAQ_question_theat_summarizes_email_discussion>\"
+        """
+
     prompt = f"""
     SOP:
     {sop_content}
@@ -62,9 +68,11 @@ def llam_get_answer_from_email(sop_content, discussion_thread):
         messages=[{'role': 'user', 'content': prompt}]
     )
     response_from_llm = get_string_between_braces(response['message']['content'])
-    print ("response from llm", response_from_llm)
-    if (not response_from_llm):
-        return None
+    print("json response", response_from_llm)
     decodedResult = json.loads(response_from_llm)
+    if (not decodedResult):
+        return None
     percentage = int(decodedResult['sop_coverage_percentage'].replace('%','').strip())
-    return (decodedResult['sop_based_email_response'], percentage)
+    coverage_description = decodedResult['description_for_coverage_percentage']
+    faq = decodedResult['FAQ_based_on_email']
+    return (decodedResult['sop_based_email_response'], percentage, coverage_description, faq)

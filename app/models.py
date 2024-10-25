@@ -120,6 +120,8 @@ class StagingFAQS(db.Model):
     thread_id = db.Column(db.Integer, db.ForeignKey(
         'threads.thread_id'), nullable=False)
     faq = db.Column(db.Text, nullable=False)
+    coverage_percentage = db.Column(db.Integer)
+    coverage_description = db.Column(db.Text)
     processed_flag = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.TIMESTAMP, default=db.func.now())
     updated_at = db.Column(

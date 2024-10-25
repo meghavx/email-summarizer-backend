@@ -165,8 +165,12 @@ def update_staging_faq(thread, doc):
     jsonRes = get_string_between_braces(r)
     if (not jsonRes):
         return
-    encodedJson = json.loads(jsonRes)
-    if((not encodedJson['sop_coverage_percentage']) and (not encodedJson['FAQ_based_on_email']) and (not encodedJson['description_for_coverage_percentage'])):
+    try:
+        encodedJson = json.loads(jsonRes)
+    except Exception as e:
+        print ("failed to decode json: ", e)
+        return
+    if not all(k in encodedJson for k in ("sop_coverage_percentage", "FAQ_based_on_email", "description_for_coverage_percentage")):
         return
     percentage = int(encodedJson['sop_coverage_percentage'].replace('%','').strip())
     stageFaq = StagingFAQS(

@@ -33,6 +33,8 @@ class FAQS(Base):
     faq_id = Column(Integer, primary_key=True, autoincrement=True)
     faq = Column(Text, nullable=False)
     freq = Column(Integer, nullable=False, default=0)
+    coverage_percentage = Column(Integer)
+    coverage_description = Column(Text)
     created_at = Column(TIMESTAMP, default=func.now())
     updated_at = Column(TIMESTAMP, default=func.now(), onupdate=func.now())
     __table_args__ = (
@@ -46,6 +48,8 @@ class StagingFAQS(Base):
     thread_id = Column(Integer, ForeignKey(
         'threads.thread_id'), nullable=False)
     faq = Column(Text, nullable=False)
+    coverage_percentage = Column(Integer)
+    coverage_description = Column(Text)
     processed_flag = Column(Boolean, default=False)
     created_at = Column(TIMESTAMP, default=func.now())
     updated_at = Column(TIMESTAMP, default=func.now(), onupdate=func.now())
@@ -91,7 +95,15 @@ def update_main_faq(mainFaqs):
         i += 1
     mainFaqString += "]"
     print(mainFaqString)
-    jsonFormat = "{ \"result\" : [{\"group\": [\"question1\",\"question2\"] }] }"
+    jsonFormat = """
+        { \"result\" : [
+                {
+                \"group\": [\"question1\",\"question2\"],
+                \"generalize_question\":  \"<generalize_faq_of_all_questions_from_group>\"
+                }
+            ] 
+        }
+        """
     prompt = f"""
         From the below list, group the questions which are contextually simialar to each other:
         faqs = {mainFaqString}
@@ -99,7 +111,6 @@ def update_main_faq(mainFaqs):
         contextually similar to each other. Group only if they very similar to each other.
         Can you give me the result in a JSON format strucutured as {jsonFormat}
         """
-
     res = ollama.generate(model='llama3.2', prompt=prompt)
     print("res", res['response'])
     jsonRes = get_string_between_braces(res['response'])
@@ -115,15 +126,19 @@ def update_main_faq(mainFaqs):
 
         main_faq = faq_group[0]  # Use the first FAQ as the main FAQ
         total_count = 0
+        total_percentage = 0
 
         faqs = session.query(FAQS).filter(FAQS.faq.in_(faq_group)).all()
         for faq in faqs:
             total_count += faq.freq
+            total_percentage += faq.coverage_percentage
 
         main_faq_record = session.query(FAQS).filter_by(faq=main_faq).first()
 
         if main_faq_record:
             main_faq_record.freq = total_count
+            main_faq_record.faq = group['generalize_question']
+            main_faq_record.coverage_percentage = total_percentage / len(faq_group)
 
         for faq in faqs:
             if faq.faq != main_faq:
@@ -133,38 +148,56 @@ def update_main_faq(mainFaqs):
 
 
 def update_faq(stagingFaqs):
-    i = 0
     stagingFaqString = "[\n"
+    i = 0
     for stagingFaq in stagingFaqs:
         stagingFaqString += (stagingFaq.faq + "\n") if (i ==
-                                                        len(stagingFaqs) - 1) else (stagingFaq.faq + ", \n")
-        i += 1
+                                                        len(stagingFaqs) - 1) else (stagingFaq.faq + ".\n")
+
     stagingFaqString += "\n]\n"
 
-    jsonFormat = "{ \"result\" : [{\"group\": [\"question1\",\"question2\"] }] }"
+    jsonFormat = """
+        { \"result\" : [
+                {
+                \"group\": [\"question1\",\"question2\",...,\"questionN\"],
+                \"generalize_question\":  \"<Any_one_of_faq_from_group_that_shows_intent_of_group>\"
+                }
+            ] 
+        }
+        """
     prompt = f"""
         From the below list, group the questions which are contextually simialar to each other:
         faqs = {stagingFaqString}
         Can you give me the result in a JSON format strucutured as {jsonFormat}
         """
-
     res = ollama.generate(model='llama3.2', prompt=prompt)
     print("res", res['response'])
     jsonRes = get_string_between_braces(res['response'])
     print("jsonRes", jsonRes)
     if (not jsonRes):
         return
-    encodedJson = json.loads(jsonRes)
+    try:
+        encodedJson = json.loads(jsonRes)
+    except Exception as e:
+        print ("something went wrong while decoding the json",e)
+        return
     resultList = encodedJson['result']
-    print(resultList)
     for res in resultList:
+        stagingFaqs = session.query(StagingFAQS).filter(StagingFAQS.faq.in_(res['group'])).all()
+        total_percentage = 0
+        coverageDescription_ = None
+        for faq in stagingFaqs:
+            print ("faq coverage_percentage:",faq.coverage_percentage)
+            total_percentage += faq.coverage_percentage
+            coverageDescription_ = faq.coverage_description
+
+        print ("total percentage", total_percentage)
         faqRes = FAQS(
-            faq=res['group'][0], freq=len(res['group'])
+            faq=res['generalize_question'], freq=len(res['group']), coverage_percentage = total_percentage / len(res['group']),
+            coverage_description = coverageDescription_
         )
         session.add(faqRes)
 
-    for staging_faq in stagingFaqs:
-        staging_faq.processed_flag = True
     session.commit()
 
 def run_faq_consolidation():
@@ -175,12 +208,17 @@ def run_faq_consolidation():
     if (len(mainFaqs) > 0):
         flag = True
     update_faq(stagingFaqs)
+    for staging_faq in stagingFaqs:
+        staging_faq.processed_flag = True
+    session.commit()
     if (flag):
         update_main_faq(mainFaqs)
+
 
 def job():
     print(f"Running consolidating FAQs at {datetime.now()}")
     run_faq_consolidation()
+
 
 if __name__ == '__main__':
     schedule.every(5).hours.do(job)

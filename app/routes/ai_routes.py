@@ -1,5 +1,5 @@
 from flask import Blueprint, jsonify, request
-from ..models import EmailThread, db, Summary, SOPGapCoverage, FAQS, Email
+from ..models import EmailThread, StagingFAQS, db, Summary, SOPGapCoverage, FAQS, Email
 from ..utils import sortEmails, get_summary, get_pdf_content_by_doc_id, sop_email, BUSINESS_SIDE_NAME, BUSINESS_SIDE_EMAIL
 from threading import Thread
 from .. import create_app
@@ -151,6 +151,19 @@ def get_category_gaps(doc_id):
     }
     return jsonify(response)
 
+
+@app.route('/staging_faq', methods=['GET'])
+def get_stating_faq():
+    stagingFaqs = StagingFAQS.query.all()
+    stagingFaqList = []
+    for stagingFaq in stagingFaqs:
+        stagingFaqList.append(
+                    {
+                        "faq": stagingFaq.faq,
+                        "coverage_percentage": stagingFaq.coverage_percentage
+                        }
+                )
+    return jsonify(stagingFaqList)
 
 @app.get('/get_faqs_with_freq')
 def get_faqs_with_freq():

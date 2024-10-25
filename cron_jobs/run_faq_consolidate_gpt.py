@@ -189,7 +189,10 @@ def update_faq(stagingFaqs):
         }
         """
     prompt = f"""
-        From the below list, group the questions which are contextually simialar to each other:
+        I have a list of frequently asked questions (FAQs) from customers directed at customer support for a wholesale company. Each FAQ is a question asked by a customer 
+        about various aspects of the business, including products, pricing, shipping, and general service inquiries. 
+        Your task is to help group these FAQs based on their similarity in both meaning and language.
+        Ensure that FAQs in each group are related to similar topics, even if the phrasing is slightly different.
         faqs = {stagingFaqString}
         Can you give me the result in a JSON format strucutured as {jsonFormat}
         """
@@ -200,12 +203,17 @@ def update_faq(stagingFaqs):
     jsonRes = get_string_between_braces(res)
     if (not jsonRes):
         return
-    encodedJson = json.loads(jsonRes)
+    try:
+        encodedJson = json.loads(jsonRes)
+    except Exception as e:
+        print ("Exception occured during decoding json", e)
+        return
     resultList = encodedJson['result']
     for res in resultList:
         stagingFaqs = session.query(StagingFAQS).filter(StagingFAQS.faq.in_(res['group'])).all()
         total_percentage = 0
         coverageDescription_ = None
+
         for faq in stagingFaqs:
             total_percentage += faq.coverage_percentage
             coverageDescription_ = faq.coverage_description
@@ -216,10 +224,7 @@ def update_faq(stagingFaqs):
             coverage_description = coverageDescription_
         )
         session.add(faqRes)
-
-    for staging_faq in stagingFaqs:
-        staging_faq.processed_flag = True
-    session.commit()
+        session.commit()
 
 
 def run_faq_consolidation():
@@ -229,6 +234,9 @@ def run_faq_consolidation():
     if (len(mainFaqs) > 0):
         flag = True
     update_faq(stagingFaqs)
+    for staging_faq in stagingFaqs:
+        staging_faq.processed_flag = True
+    session.commit()
     if (flag):
         update_main_faq(mainFaqs)
 
