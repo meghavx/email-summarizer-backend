@@ -90,17 +90,14 @@ def get_answer_from_email(email_subject, email_message, sender_name, doc_content
 
 def get_summary_response(discussion_thread):
     completion = client.chat.completions.create(
-        model="gpt-3.5-turbo",
+        model="gpt-4o",
         messages=[
         {
             "role": "user", "content": f"""
-            You are given below an email disucssion thread.
-            Summarize the email  pointwise in 3 new lines - "
-            1.Subject 
-            2.Meeting Agenda 
-            3.Important dates
-            4. A quick summary of email disucssion
-            "
+
+            Make a short summary of the following email thread in a professional format, highlight if there is any important date
+    
+
             Discussion thread:
 
           """ + discussion_thread

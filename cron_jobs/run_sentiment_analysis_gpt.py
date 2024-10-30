@@ -17,7 +17,7 @@ text_splitter = RecursiveCharacterTextSplitter(
     chunk_size=750,
     chunk_overlap=50
 )
-llm = ChatOpenAI(model="gpt-4", temperature=0.5, max_tokens=1000)
+llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_tokens=1000)
 
 Base = declarative_base()
 class EmailThread(Base):
@@ -53,17 +53,26 @@ def get_sentiment_score(text):
     (
         "system",
         f"""
+
         I will provide an email discussion thread between a customer and a customer support team for a supply chain company. 
         Based on the conversation, categorize the sentiment and urgency of the email using the following categories:
     1. **Critical (Negative Urgency)**: 
-        Emails that express high urgency, negative sentiment, or frustration. These emails require immediate action or resolution. 
+        - Emails showing strong dissatisfaction, frustration, or sarcasm, implying urgency.
+        - Look for sarcastic phrases, exaggerated politeness, or irony that mask frustration.
+        - Immediate action required.
+
     2. **Needs Attention (Negative or Neutral)**: 
-        Emails with moderate urgency or concern, which may include complaints, requests for clarification, or unresolved issues. 
-        They may require follow-up but are not as pressing as critical emails.
+        - Emails with moderate concern or requests for follow-up, often using polite but insistent tones
+        - Follow-up recommended.
+
     3. **Neutral (No Immediate Action)**: 
-        Emails that are purely informational, with no immediate request or concern. These may provide updates, confirmations, or general communication.
+        - Objective or informational emails without requests or strong emotion
+        - No immediate action needed
+
     4. **Positive (No Action Needed)**: Emails expressing satisfaction, appreciation, or positive feedback. 
-            No action or response is required unless it's to acknowledge the positive sentiment.
+            - Genuine appreciation or satisfaction without sarcasm or complaints
+            - No action required, though acknowledgment may be appropriate.
+
     Based on this, categorize each email in the thread and briefly explain why it fits into the chosen category.
      Give me a number between 1 to 10 (> 8 means critical, >6 means needs attention, > 3 means neutral and else positive) \n
      remember to only return the number and nothing else:\n\n

@@ -41,7 +41,14 @@ def store_email_document_helper(thread_id: int, doc_id: int):
             raise Exception("Something went wrong with LLM response")
         (content, coverage_percentage, coverage_description, faq) = res
         customerName, customerEmail = latest_email.sender_name, latest_email.sender_email
-
+    
+        new_staging_faq = StagingFAQS(
+            thread_id = thread_id
+         ,  faq = faq
+         ,  coverage_description = coverage_description
+         , coverage_percentage = coverage_percentage
+            )
+        
         new_email = Email(
             sender_email = BUSINESS_SIDE_EMAIL,
             sender_name = BUSINESS_SIDE_NAME,
@@ -56,6 +63,7 @@ def store_email_document_helper(thread_id: int, doc_id: int):
             coverage_description = coverage_description
         )
         db.session.add(new_email)
+        db.session.add(new_staging_faq)
         db.session.commit()
     except Exception as e:
         print ("Exception occurred during SOP based email response: ", e)
