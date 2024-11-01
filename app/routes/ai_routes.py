@@ -180,3 +180,19 @@ def get_faqs_with_freq():
     print(faqs)
     faq_list = [{"faq": faq.faq, "freq": faq.freq, "coverage_percentage": faq.coverage_percentage, "coverageDescription": faq.coverage_description} for faq in faqs]
     return jsonify(faq_list)
+
+autoSendEnable = False
+thresholdVal = 101
+
+@app.post('/set_auto_send/<isAutoSend>/<int:threshold>')
+def setAutoSend(isAutoSend, threshold):
+    global autoSendEnable
+    global thresholdVal
+    
+    autoSendEnable = True if (isAutoSend == "true") else False
+    thresholdVal = threshold
+    return jsonify({}),200
+
+@app.get('/get_auto_send')
+def getAutoSend():
+    return jsonify({"isAutoSend": autoSendEnable, "thresholdVal": thresholdVal})

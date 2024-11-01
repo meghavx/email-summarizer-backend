@@ -40,7 +40,7 @@ text_splitter = RecursiveCharacterTextSplitter(
     chunk_overlap=50)
 
 embeddings = OpenAIEmbeddings()
-llm = ChatOpenAI(model="gpt-4", temperature=0.5, max_tokens=1000)
+llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_tokens=1000)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"),)
 
 def get_answer_from_email(email_subject, email_message, sender_name, doc_content):
