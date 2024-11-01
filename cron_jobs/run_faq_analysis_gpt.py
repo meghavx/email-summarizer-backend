@@ -1,95 +1,25 @@
-from sqlalchemy.ext.declarative import declarative_base
 import schedule
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Text, TIMESTAMP, ForeignKey, func, CheckConstraint, Boolean, LargeBinary
-from sqlalchemy.orm import sessionmaker, relationship
 import time
-import re
 import json
 import os
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_openai import ChatOpenAI
 from langchain.chains import RetrievalQA
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
 from dotenv import load_dotenv
 from openai import OpenAI
 from pypdf import PdfReader
 from io import BytesIO
-
+from models import EmailThread, StagingFAQS, SOPDocument
+from utils import session, text_splitter, get_string_between_braces, sortEmails
 
 load_dotenv()
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 
-text_splitter = RecursiveCharacterTextSplitter(
-    separators=['\n\n', '\n', '.', ','],
-    chunk_size=750,
-    chunk_overlap=50
-)
 llm = ChatOpenAI(model="gpt-4", temperature=0.5, max_tokens=1000)
-
-Base = declarative_base()
-class EmailThread(Base):
-    __tablename__ = 'threads'
-    thread_id = Column(Integer, primary_key=True)
-    thread_topic = Column(String(100), nullable=False)
-    emails = relationship("Email", back_populates="email_thread")
-
-class Email(Base):
-    __tablename__ = 'emails'
-    email_record_id = Column(Integer, primary_key=True)
-    sender_email = Column(String(50), nullable=False)
-    thread_id = Column(Integer, ForeignKey('threads.thread_id'), nullable=False)
-    email_content = Column(Text, nullable=True)
-    email_received_at = Column(TIMESTAMP, nullable=True)
-    email_thread = relationship("EmailThread", back_populates="emails")
-
-class FAQS(Base):
-    __tablename__ = 'faqs'
-    faq_id = Column(Integer, primary_key=True, autoincrement=True)
-    faq = Column(Text, nullable=False)
-    freq = Column(Integer, nullable=False, default=0)
-    created_at = Column(TIMESTAMP , default = func.now())
-    updated_at = Column(TIMESTAMP , default = func.now(), onupdate=func.now())
-    __table_args__ = (
-        CheckConstraint('freq >= 0', name='chk_positive'),
-    )
-
-class Category(Base):
-    __tablename__ = 'query_categories'
-    category_id = Column(Integer, primary_key=True)
-    category_name = Column(String(100), nullable=False)
-    sop_doc_id = Column(Integer, ForeignKey('sop_document.doc_id'), nullable=False)
-    created_at = Column(TIMESTAMP , default = func.now())
-    updated_at = Column(TIMESTAMP , default = func.now(), onupdate=func.now())
-
-class StagingFAQS(Base):
-    __tablename__ = 'staging_faqs'
-    staging_faq_id = Column(Integer, primary_key=True, autoincrement=True)
-    thread_id = Column(Integer, ForeignKey('threads.thread_id'), nullable=False)
-    faq = Column(Text, nullable=False)
-    coverage_percentage = Column(Integer)
-    coverage_description = Column(Text)
-    processed_flag = Column(Boolean, default=False)
-    created_at = Column(TIMESTAMP, default=func.now())
-    updated_at = Column(TIMESTAMP, default=func.now(), onupdate=func.now())
-
-Base = declarative_base()
-class SOPDocument(Base):
-    __tablename__ = 'sop_document'
-    doc_id = Column(Integer, primary_key=True)
-    doc_content = Column(LargeBinary, nullable=False)
-    doc_timestamp = Column(TIMESTAMP, default=func.now()) 
-
-DATABASE_URI = 'postgresql://ruchita:qwerty@localhost:5432/poc'
-engine = create_engine(DATABASE_URI)
-Session = sessionmaker(bind=engine)
-session = Session()
-
-def sortEmails(emailList):
-    return sorted(emailList, key=lambda email: email.email_received_at)
 
 def get_pdf_content_by_doc_id(doc_id: int):
     try:
@@ -114,12 +44,6 @@ def getDiscussionThread(thread):
         email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
         discussion_thread += email_entry
     return discussion_thread
-
-def get_string_between_braces(text):
-    match = re.search(r'\{.*?\}', text)
-    if match:
-        return match.group()  # Return the matched string
-    return None  # Return None if no match is found
 
 embeddings = OpenAIEmbeddings()
 llm = ChatOpenAI(model="gpt-4", temperature=0.5, max_tokens=1000)

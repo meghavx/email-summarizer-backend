@@ -1,82 +1,10 @@
-from sqlalchemy.ext.declarative import declarative_base
 import schedule
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, Text, TIMESTAMP, ForeignKey, func, CheckConstraint, Boolean, String
-from sqlalchemy.orm import sessionmaker, relationship
 import time
 import ollama
 import json
-
-Base = declarative_base()
-
-
-class EmailThread(Base):
-    __tablename__ = 'threads'
-    thread_id = Column(Integer, primary_key=True)
-    thread_topic = Column(String(100), nullable=False)
-    emails = relationship("Email", back_populates="email_thread")
-
-
-class Email(Base):
-    __tablename__ = 'emails'
-    email_record_id = Column(Integer, primary_key=True)
-    sender_email = Column(String(50), nullable=False)
-    thread_id = Column(Integer, ForeignKey(
-        'threads.thread_id'), nullable=False)
-    email_content = Column(Text, nullable=True)
-    email_received_at = Column(TIMESTAMP, nullable=True)
-    email_thread = relationship("EmailThread", back_populates="emails")
-
-
-class FAQS(Base):
-    __tablename__ = 'faqs'
-    faq_id = Column(Integer, primary_key=True, autoincrement=True)
-    faq = Column(Text, nullable=False)
-    freq = Column(Integer, nullable=False, default=0)
-    coverage_percentage = Column(Integer)
-    coverage_description = Column(Text)
-    created_at = Column(TIMESTAMP, default=func.now())
-    updated_at = Column(TIMESTAMP, default=func.now(), onupdate=func.now())
-    __table_args__ = (
-        CheckConstraint('freq >= 0', name='chk_positive'),
-    )
-
-
-class StagingFAQS(Base):
-    __tablename__ = 'staging_faqs'
-    staging_faq_id = Column(Integer, primary_key=True, autoincrement=True)
-    thread_id = Column(Integer, ForeignKey(
-        'threads.thread_id'), nullable=False)
-    faq = Column(Text, nullable=False)
-    coverage_percentage = Column(Integer)
-    coverage_description = Column(Text)
-    processed_flag = Column(Boolean, default=False)
-    created_at = Column(TIMESTAMP, default=func.now())
-    updated_at = Column(TIMESTAMP, default=func.now(), onupdate=func.now())
-
-
-DATABASE_URI = 'postgresql://ruchita:qwerty@localhost:5432/poc'
-engine = create_engine(DATABASE_URI)
-Session = sessionmaker(bind=engine)
-session = Session()
-
-
-def findFirstOccurance(text, ch):
-    for i in range(0, len(text)):
-        if (text[i] == ch):
-            return i
-    return None
-
-
-def findLastOccurance(text, ch):
-    lastIdx = -1
-    for i in range(0, len(text)):
-        if (text[i] == ch):
-            lastIdx = i
-    if (lastIdx == -1):
-        return None
-    return lastIdx
-
+from models import FAQS, StagingFAQS
+from utils import session, findFirstOccurance, findLastOccurance, get_string_between_braces
 
 def get_string_between_braces(text):
     n1 = findFirstOccurance(text, '{')
@@ -84,7 +12,6 @@ def get_string_between_braces(text):
     if (not n1 and not n2):
         return None
     return text[n1:(n2+1)]
-
 
 def update_main_faq(mainFaqs):
     i = 0

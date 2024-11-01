@@ -1,52 +1,16 @@
 import schedule
 import time
 from datetime import datetime, timedelta
-from sqlalchemy import create_engine, Column, Integer, String, Text, TIMESTAMP, Enum, ForeignKey, func
-from sqlalchemy.orm import sessionmaker, relationship
-from sqlalchemy.ext.declarative import declarative_base
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 import os
+from models import EmailThread, EmailThreadSentiment
+from utils import session
 
 load_dotenv()
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 
-text_splitter = RecursiveCharacterTextSplitter(
-    separators=['\n\n', '\n', '.', ','],
-    chunk_size=750,
-    chunk_overlap=50
-)
 llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_tokens=1000)
-
-Base = declarative_base()
-class EmailThread(Base):
-    __tablename__ = 'threads'
-    thread_id = Column(Integer, primary_key=True)
-    thread_topic = Column(String(100), nullable=False)
-    emails = relationship("Email", back_populates="email_thread")
-
-class Email(Base):
-    __tablename__ = 'emails'
-    email_record_id = Column(Integer, primary_key=True)
-    sender_email = Column(String(50), nullable=False)
-    thread_id = Column(Integer, ForeignKey('threads.thread_id'), nullable=False)
-    email_content = Column(Text, nullable=True)
-    email_received_at = Column(TIMESTAMP, nullable=True)
-    email_thread = relationship("EmailThread", back_populates="emails")
-
-class EmailThreadSentiment(Base):
-    __tablename__ = 'email_thread_sentiment'
-    sentiment_id = Column(Integer, primary_key=True)
-    thread_id = Column(Integer, ForeignKey('threads.thread_id'), nullable=False)
-    sentiments = Column(Enum('Critical', 'Needs attention', 'Neutral', 'Positive', name='sentiment'), nullable=False)
-    timestamp = Column(TIMESTAMP, default=func.now())
-    thread = relationship("EmailThread", backref="sentiments")
-
-DATABASE_URI = 'postgresql://ruchita:qwerty@localhost/poc'
-engine = create_engine(DATABASE_URI)
-Session = sessionmaker(bind=engine)
-session = Session()
 
 def get_sentiment_score(text):
     messages = [

@@ -1,46 +1,9 @@
 import schedule
 import time
 from datetime import datetime, timedelta
-from sqlalchemy import create_engine, Column, Integer, String, Text, TIMESTAMP, Enum, ForeignKey, func
-from sqlalchemy.orm import sessionmaker, relationship
-from sqlalchemy.ext.declarative import declarative_base
 import ollama
-
-# SQLAlchemy Base
-Base = declarative_base()
-
-# Database Models
-class EmailThread(Base):
-    __tablename__ = 'threads'
-    thread_id = Column(Integer, primary_key=True)
-    thread_topic = Column(String(100), nullable=False)
-    emails = relationship("Email", back_populates="email_thread")
-
-class Email(Base):
-    __tablename__ = 'emails'
-    email_record_id = Column(Integer, primary_key=True)
-    sender_email = Column(String(50), nullable=False)
-    thread_id = Column(Integer, ForeignKey('threads.thread_id'), nullable=False)
-    email_content = Column(Text, nullable=True)
-    email_received_at = Column(TIMESTAMP, nullable=True)
-    email_thread = relationship("EmailThread", back_populates="emails")
-
-class EmailThreadSentiment(Base):
-    __tablename__ = 'email_thread_sentiment'
-    sentiment_id = Column(Integer, primary_key=True)
-    thread_id = Column(Integer, ForeignKey('threads.thread_id'), nullable=False)
-    sentiments = Column(Enum('Critical', 'Needs attention', 'Neutral', 'Positive', name='sentiment'), nullable=False)
-    timestamp = Column(TIMESTAMP, default=func.now())
-    thread = relationship("EmailThread", backref="sentiments")
-
-# Database connection setup
-DATABASE_URI = 'postgresql://ruchita:qwerty@localhost:5432/poc'
-engine = create_engine(DATABASE_URI)
-Session = sessionmaker(bind=engine)
-session = Session()
-
-def sortEmails(emailList):
-    return sorted(emailList, key=lambda email: email.email_received_at)
+from models import EmailThread, EmailThreadSentiment
+from utils import session, sortEmails
 
 def update_sentiment(thread):
     current_time = datetime.now()
