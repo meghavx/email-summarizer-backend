@@ -8,9 +8,10 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import json
 
-
 load_dotenv()
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+openAiKey = os.getenv("OPENAI_API_KEY")
+if openAiKey:
+    os.environ["OPENAI_API_KEY"] = openAiKey
 
 def findFirstOccurance(text,ch):
     for i in range(0,len(text)):
@@ -88,20 +89,34 @@ def get_answer_from_email(email_subject, email_message, sender_name, doc_content
     faq = decodedResult['FAQ_based_on_email']
     return (decodedResult['sop_based_email_response'], percentage, coverage_description, faq)
 
-def get_summary_response(discussion_thread):
+summaryDict = {
+    "convert_to_spanish" : """- Language of the summary shall be in spanish language."""
+    , "corporate_email" : """- The email discussion is in the corporate email. Add points related to corporate such as meeting agenda."""
+    , "customer_support": """- The email discussion is in between customer and customer support. """
+}
+
+def getSummaryPrompt(summaryOption: str | None) -> str | None:
+    if not summaryOption:
+        return None
+    if summaryOption in summaryDict:
+        return summaryDict[summaryOption]
+    return None
+
+def get_summary_response(discussion_thread, summaryOption : str | None):
+    summaryPrompt = getSummaryPrompt(summaryOption)
     completion = client.chat.completions.create(
         model="gpt-4o",
         messages=[
         {
             "role": "user", "content": f"""
 
-            Make a short summary of the following email thread in a professional format, highlight if there is any important date
-    
-
+            Make a short summary of the following email thread in a professional format, highlight if there is any important date.
+            {summaryPrompt}
             Discussion thread:
 
           """ + discussion_thread
          }
     ])
+    #  The response content has to be in the same language as input language.
     response = completion.choices[0].message.content.strip()
     return response

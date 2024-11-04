@@ -89,6 +89,7 @@ def store_email_document():
 
 @app.post('/summarize/<int:thread_id>')
 def summarize_thread_by_id(thread_id):
+    summaryOption = request.args.get('option')
     thread = EmailThread.query.get(thread_id)
     if not thread:
         return jsonify({'error': 'Thread not found'}), 404
@@ -105,7 +106,7 @@ def summarize_thread_by_id(thread_id):
         email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
         discussion_thread += email_entry
 
-    response = get_summary(discussion_thread)
+    response = get_summary(discussion_thread, summaryOption)
     thread_summary = Summary(
         thread_id=thread.thread_id,
         summary_content=response

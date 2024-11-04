@@ -44,18 +44,17 @@ def getCustomerNameAndEmail(emails):
             return email.receiver_name, email.receiver_email
     return "user", "user@abc.com"
 
-def get_summary(discussion_thread):
+def get_summary(discussion_thread: str , summaryOption: str | None):
     if (AI_MODEL == "llama"):
         return llama_get_summary_response(discussion_thread)
     else:
-        return get_summary_response(discussion_thread)
+        return get_summary_response(discussion_thread, summaryOption)
 
 def sop_email(thread_topic, discussion_thread, sender_name, doc):
     if (AI_MODEL == "llama"):
         return llam_get_answer_from_email(doc, discussion_thread)
     else:
         return get_answer_from_email(thread_topic, discussion_thread, sender_name, doc)
-
 
 def sortEmails(emailList, sortOrder):
     return sorted(emailList, key=lambda email: email.email_received_at, reverse = not sortOrder)
