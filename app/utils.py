@@ -6,7 +6,7 @@ from io import BytesIO
 
 BUSINESS_SIDE_NAME = "Support Team"
 BUSINESS_SIDE_EMAIL = "support@business.com"
-AI_MODEL = "gpt"  # Use either "gpt" or "llama".
+AI_MODEL = "llama"  # Use either "gpt" or "llama".
 
 def getSentimentHelper(sentiment_record):
     sentiment_ = sentiment_record.sentiments if sentiment_record else 'Positive'
