@@ -2,15 +2,17 @@ from flask import Blueprint, jsonify, request
 from ..models import EmailThread, Email, db, EmailThreadSentiment, SOPDocument
 from ..utils import getSentimentHelper, BUSINESS_SIDE_EMAIL, BUSINESS_SIDE_NAME, getCustomerNameAndEmail
 from datetime import datetime, timezone
+from typing import Union, Any, List, Dict
+from werkzeug.exceptions import BadRequest, NotFound  # Import for raising exceptions
 
 app = Blueprint('main', __name__)
 
 @app.route('/')
-def hello():
+def hello() -> str:
     return "Hello, User!"
 
 @app.route('/all_email_threads', methods=['GET'])
-def get_all_threads():
+def get_all_threads() -> Dict[str, Union[List[Dict], str]]:
     threads = EmailThread.query.order_by(EmailThread.updated_at.desc(
     ), EmailThread.created_at.desc(), EmailThread.thread_id.desc()).all()
 
@@ -46,12 +48,10 @@ def get_all_threads():
             'emails': emails,
             'sentiment': sentiment
         })
-
     return jsonify({"threads": thread_list, "time": datetime.now(timezone.utc).strftime("%d-%m-%y_%H:%M:%S")})
 
-
 @app.route('/create/email', methods=['POST'])
-def create_email():
+def create_email() -> Union[dict, BadRequest]:
     data = request.json
     if not data:
         return jsonify({'error': 'unable to parse JSON'}), 400
@@ -71,16 +71,15 @@ def create_email():
         email_content=data['content'],
         receiver_email=BUSINESS_SIDE_EMAIL,
         receiver_name=BUSINESS_SIDE_NAME,
-        email_received_at=db.func.now()  # Set timestamp to now
+        email_received_at=db.func.now() 
     )
     db.session.add(new_email)
     db.session.commit()
 
     return jsonify({'success': 'Email and thread created successfully', 'thread_id': new_thread.thread_id, 'email_record_id': new_email.email_record_id}), 201
 
-
 @app.route('/create/email/<int:thread_id>', methods=['POST'])
-def add_email_to_thread(thread_id):
+def add_email_to_thread(thread_id: int) -> Union[dict, BadRequest, NotFound]:
     data = request.json
     if not data:
         return jsonify({'error': 'unable to parse JSON'}), 400
@@ -100,15 +99,14 @@ def add_email_to_thread(thread_id):
         email_content=data['content'],
         receiver_email=customerEmail,
         receiver_name=customerName,
-        email_received_at=db.func.now()  # Set timestamp to now
+        email_received_at=db.func.now()
     )
     db.session.add(new_email)
     db.session.commit()
     return jsonify({'success': 'Email added to thread', 'email_record_id': new_email.email_record_id}), 201
 
-
 @app.post('/upload_sop_doc/')
-def store_sop_doc_to_db():
+def store_sop_doc_to_db() -> Union[dict, BadRequest]:
     if "file" not in request.files:
         return jsonify({'error': 'No file part'}), 400
 
@@ -122,9 +120,8 @@ def store_sop_doc_to_db():
     db.session.commit()
     return jsonify({}), 200
 
-
 @app.route("/check_new_emails/<last_updated_timestamp>", methods=["GET"])
-def check_new_emails(last_updated_timestamp):
+def check_new_emails(last_updated_timestamp: str) -> List[Dict[str, Any]]:
     dt = datetime.strptime(last_updated_timestamp, "%d-%m-%y_%H:%M:%S")
     threads = EmailThread.query.all()
     for thread in threads:
@@ -136,7 +133,7 @@ def check_new_emails(last_updated_timestamp):
 
 
 @app.route('/update/email/<int:email_id>', methods=['PUT'])
-def update_email(email_id):
+def update_email(email_id: int) -> tuple[dict, int]:
     data = request.json
     if not data or not data['content']:
         return jsonify({'error': 'Field not provided for update'}), 400

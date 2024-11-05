@@ -1,0 +1,41 @@
+--- Folder Structure ---
+[app]
+    ├── __init__.py
+    ├── config.py
+    ├── [llm]
+        ├── gpt_ai_functions.py
+        └── llama_ai_functions.py
+    ├── models.py
+    ├── [routes]
+        ├── __init__.py
+        ├── ai_routes.py
+        └── app_routes.py
+    └── utils.py
+[cron_jobs]
+    ├── db_session.py
+    ├── models.py
+    ├── run_faq_analysis_gpt.py 
+    ├── run_faq_analysis_llama.py
+    ├── run_faq_consolidate_gpt.py
+    ├── run_faq_consolidate_llama.py
+    ├── run_sentiment_analysis_gpt.py
+    ├── run_sentiment_analysis_llama.py
+    └── run_sop_gap_gpt.py
+[scripts]
+    ├── insert_doc.py
+    ├── schema.sql
+    └── start-dev.sh
+[uploads]
+    ├── SOP.pdf
+    └── binary_content.txt
+.env
+.gitignore
+ERD.png
+makefile
+project_structure.txt
+README.md
+requirements.txt
+run.py
+utils.py
+test_poc.py
+Wiki.md

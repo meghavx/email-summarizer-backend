@@ -1,50 +1,24 @@
 import os
 from langchain_openai import ChatOpenAI
 from langchain.chains import RetrievalQA
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_openai import OpenAIEmbeddings
 from dotenv import load_dotenv
 from openai import OpenAI
 import json
+from app.llm.utils import text_splitter, get_string_between_braces
+from typing import Optional, Dict
 
 load_dotenv()
 openAiKey = os.getenv("OPENAI_API_KEY")
 if openAiKey:
     os.environ["OPENAI_API_KEY"] = openAiKey
 
-def findFirstOccurance(text,ch):
-    for i in range(0,len(text)):
-        if(text[i] == ch):
-            return i
-    return None
-
-def findLastOccurance(text,ch):
-    lastIdx = -1
-    for i in range(0, len(text)):
-        if(text[i] == ch):
-            lastIdx = i
-    if (lastIdx == -1):
-        return None
-    return lastIdx
-
-def get_string_between_braces(text):
-    n1 = findFirstOccurance(text,'{')
-    n2 = findLastOccurance(text,'}')
-    if (not n1 and not n2):
-        return None
-    return text[n1:(n2+1)]
-
-text_splitter = RecursiveCharacterTextSplitter(
-    separators=['\n\n', '\n', '.', ','],
-    chunk_size=750,
-    chunk_overlap=50)
-
 embeddings = OpenAIEmbeddings()
 llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_tokens=1000)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"),)
 
-def get_answer_from_email(email_subject, email_message, sender_name, doc_content):
+def get_answer_from_email(email_subject: str, email_message: str, sender_name: str, doc_content: str) -> Optional[Dict[str, str]]:
     text_chunks = text_splitter.split_text(doc_content)
     vector_store = FAISS.from_texts(text_chunks, embedding=embeddings)
     qa = RetrievalQA.from_chain_type(
@@ -102,7 +76,7 @@ def getSummaryPrompt(summaryOption: str | None) -> str | None:
         return summaryDict[summaryOption]
     return None
 
-def get_summary_response(discussion_thread, summaryOption : str | None):
+def get_summary_response(discussion_thread: str, summaryOption: Optional[str]) -> str:
     summaryPrompt = getSummaryPrompt(summaryOption)
     completion = client.chat.completions.create(
         model="gpt-4o",

@@ -1,5 +1,12 @@
 BEGIN;
 
+CREATE TABLE threads (
+  thread_id SERIAL UNIQUE PRIMARY KEY,
+  thread_topic VARCHAR(100),
+  created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now()
+);
+
 CREATE TABLE emails (
   email_record_id SERIAL PRIMARY KEY,
   sender_email VARCHAR(50) NOT NULL,
@@ -15,12 +22,10 @@ CREATE TABLE emails (
   coverage_description text
 );
 
-CREATE TABLE threads (
-  thread_id SERIAL UNIQUE PRIMARY KEY,
-  thread_topic VARCHAR(100),
-  created_at timestamp DEFAULT now(),
-  updated_at timestamp DEFAULT now()
-);
+ALTER TABLE emails
+ADD CONSTRAINT emails_fkey
+FOREIGN KEY (thread_id)
+REFERENCES threads (thread_id);
 
 CREATE TABLE summaries (
   summary_id SERIAL PRIMARY KEY,
@@ -51,11 +56,6 @@ CREATE TYPE GAP_CATEGORY AS ENUM (
   'Ambiguously Covered',
   'Not Covered'
 );
- 
-ALTER TABLE emails
-ADD CONSTRAINT emails_fkey
-FOREIGN KEY (thread_id)
-REFERENCES threads (thread_id);
 
 CREATE TABLE sop_document (
   doc_id SERIAL PRIMARY KEY,
@@ -66,11 +66,10 @@ CREATE TABLE sop_document (
 CREATE OR REPLACE FUNCTION update_thread_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Update the updated_at field in the corresponding thread
-    UPDATE threads
-    SET updated_at = NOW()
-    WHERE thread_id = NEW.thread_id;
-    RETURN NEW;
+  UPDATE threads
+  SET updated_at = NOW()
+  WHERE thread_id = NEW.thread_id;
+  RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -108,41 +107,41 @@ CREATE TABLE sop_gap_coverage (
 );
 
 CREATE TABLE staging_sop_gap_coverage (
-    staging_coverage_id SERIAL PRIMARY KEY,
-    thread_id INTEGER NOT NULL REFERENCES threads (thread_id),
-    sop_doc_id INTEGER NOT NULL REFERENCES sop_document (doc_id),
-    category_id INTEGER NOT NULL REFERENCES query_categories (category_id),
-    gap_type gap_category NOT NULL,
-    processed_flag BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now()
+  staging_coverage_id SERIAL PRIMARY KEY,
+  thread_id INTEGER NOT NULL REFERENCES threads (thread_id),
+  sop_doc_id INTEGER NOT NULL REFERENCES sop_document (doc_id),
+  category_id INTEGER NOT NULL REFERENCES query_categories (category_id),
+  gap_type gap_category NOT NULL,
+  processed_flag BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
 );
 
 CREATE TABLE staging_faqs (
-    staging_faq_id SERIAL PRIMARY KEY,
-    thread_id INTEGER NOT NULL REFERENCES threads (thread_id),
-    faq TEXT NOT NULL,
-    coverage_percentage int,
-    coverage_description text,
-    processed_flag BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT now(),
-    updated_at TIMESTAMP DEFAULT now()
+  staging_faq_id SERIAL PRIMARY KEY,
+  thread_id INTEGER NOT NULL REFERENCES threads (thread_id),
+  faq TEXT NOT NULL,
+  coverage_percentage int,
+  coverage_description text,
+  processed_flag BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT now(),
+  updated_at TIMESTAMP DEFAULT now()
 );
 
 CREATE TYPE BUCKET_NAME AS ENUM (
-    'Excellent Coverage',
-    'Good Coverage',
-    'Moderate Coverage',
-    'Minimal Coverage',
-    'Poor Coverage'
+  'Excellent Coverage',
+  'Good Coverage',
+  'Moderate Coverage',
+  'Minimal Coverage',
+  'Poor Coverage'
 );
 
 CREATE TABLE coverage_buckets (
-    bucket_id SERIAL PRIMARY KEY,
-    bucket_name VARCHAR(256) NOT NULL,
-    faq_count INTEGER NOT NULL,
-    percentage FLOAT NOT NULL,
-    created_at TIMESTAMP DEFAULT now(),
+  bucket_id SERIAL PRIMARY KEY,
+  bucket_name VARCHAR(256) NOT NULL,
+  faq_count INTEGER NOT NULL,
+  percentage FLOAT NOT NULL,
+  created_at TIMESTAMP DEFAULT now(),
 	updated_at TIMESTAMP DEFAULT now()
 );
 

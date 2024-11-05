@@ -1,54 +1,19 @@
 import schedule
 import time
 from datetime import datetime, timedelta
-from sqlalchemy import create_engine, Column, Integer, String, Text, TIMESTAMP, Enum, ForeignKey, func
-from sqlalchemy.orm import sessionmaker, relationship
-from sqlalchemy.ext.declarative import declarative_base
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 import os
+from db_session import session
+from models import EmailThread, EmailThreadSentiment
+from typing import Optional
 
 load_dotenv()
 os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
 
-text_splitter = RecursiveCharacterTextSplitter(
-    separators=['\n\n', '\n', '.', ','],
-    chunk_size=750,
-    chunk_overlap=50
-)
 llm = ChatOpenAI(model="gpt-4o", temperature=0.5, max_tokens=1000)
 
-Base = declarative_base()
-class EmailThread(Base):
-    __tablename__ = 'threads'
-    thread_id = Column(Integer, primary_key=True)
-    thread_topic = Column(String(100), nullable=False)
-    emails = relationship("Email", back_populates="email_thread")
-
-class Email(Base):
-    __tablename__ = 'emails'
-    email_record_id = Column(Integer, primary_key=True)
-    sender_email = Column(String(50), nullable=False)
-    thread_id = Column(Integer, ForeignKey('threads.thread_id'), nullable=False)
-    email_content = Column(Text, nullable=True)
-    email_received_at = Column(TIMESTAMP, nullable=True)
-    email_thread = relationship("EmailThread", back_populates="emails")
-
-class EmailThreadSentiment(Base):
-    __tablename__ = 'email_thread_sentiment'
-    sentiment_id = Column(Integer, primary_key=True)
-    thread_id = Column(Integer, ForeignKey('threads.thread_id'), nullable=False)
-    sentiments = Column(Enum('Critical', 'Needs attention', 'Neutral', 'Positive', name='sentiment'), nullable=False)
-    timestamp = Column(TIMESTAMP, default=func.now())
-    thread = relationship("EmailThread", backref="sentiments")
-
-DATABASE_URI = 'postgresql://ruchita:qwerty@localhost/poc'
-engine = create_engine(DATABASE_URI)
-Session = sessionmaker(bind=engine)
-session = Session()
-
-def get_sentiment_score(text):
+def get_sentiment_score(text: str) -> int:
     messages = [
     (
         "system",
@@ -83,8 +48,7 @@ def get_sentiment_score(text):
     ai_msg = llm.invoke(messages)
     return (ai_msg.content)
 
-
-def analyze_sentiment(text):
+def analyze_sentiment(text: str) -> Optional[str]:
     # Analyze sentiment
     res = get_sentiment_score(text)
     try:
@@ -103,7 +67,7 @@ def analyze_sentiment(text):
         sentiment = "Positive"
     return sentiment
 
-def update_sentiment(thread):
+def update_sentiment(thread: Optional[EmailThread]) -> None:
     if not thread:
         return
     current_time = datetime.now()
@@ -143,12 +107,12 @@ def update_sentiment(thread):
     session.commit()
     print(f"Updated sentiment for thread {thread.thread_id} to {sentiment_category}")
 
-def run_sentiment_analysis():
-    threads = session.query(EmailThread).all()  # Fetch all threads
+def run_sentiment_analysis() -> None:
+    threads = session.query(EmailThread).all()
     for thread in threads:
         update_sentiment(thread)  # Update sentiment for each thread
 
-def job():
+def job() -> None:
     print(f"Running sentiment analysis at {datetime.now()}")
     run_sentiment_analysis()
 
@@ -157,4 +121,4 @@ if __name__ == '__main__':
     job()
     while True:
         schedule.run_pending()
-        time.sleep(60)  # Sleep for a minute between checks
+        time.sleep(60)
