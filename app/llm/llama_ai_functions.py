@@ -1,29 +1,9 @@
 import ollama
 import json
+from typing import Optional, Tuple
+from app.llm.utils import get_string_between_braces
 
-def findFirstOccurance(text,ch):
-    for i in range(0,len(text)):
-        if(text[i] == ch):
-            return i
-    return None
-
-def findLastOccurance(text,ch):
-    lastIdx = -1
-    for i in range(0, len(text)):
-        if(text[i] == ch):
-            lastIdx = i
-    if (lastIdx == -1):
-        return None
-    return lastIdx
-
-def get_string_between_braces(text):
-    n1 = findFirstOccurance(text,'{')
-    n2 = findLastOccurance(text,'}')
-    if (not n1 and not n2):
-        return None
-    return text[n1:(n2+1)]
-
-def llama_get_summary_response(discussion_thread):
+def llama_get_summary_response(discussion_thread: str) -> str:
     prompt = f"""Please quickly summarize the following email thread in 2-3 points. 
                 Include the main points, important decisions, and highlight any significant dates. 
                 Here is the list of emails in the thread:\n\n"""
@@ -33,12 +13,12 @@ def llama_get_summary_response(discussion_thread):
     },])
     return (response['message']['content'])
 
-def llam_get_answer_from_email(sop_content, discussion_thread):
+def llama_get_answer_from_email(sop_content: str, discussion_thread: str) -> Optional[Tuple[str, int, str, str]]:
     json_format = """
         {\"sop_based_email_response\": \"<email response>\" ,
          \"sop_coverage_percentage\": \"<percentage>%\", 
          \"description_for_coverage_percentage\": \"<description>\" }, 
-        \"FAQ_based_on_email\":\"<A_generalized_FAQ_question_theat_summarizes_email_discussion>\"
+        \"FAQ_based_on_email\":\"<A_generalized_FAQ_question_thread_summarizes_email_discussion>\"
         """
 
     prompt = f"""
@@ -62,7 +42,7 @@ def llam_get_answer_from_email(sop_content, discussion_thread):
     Email exchanges: 
     {discussion_thread}
     """
-
+    
     response = ollama.chat(
         model='llama3.2',
         messages=[{'role': 'user', 'content': prompt}]
