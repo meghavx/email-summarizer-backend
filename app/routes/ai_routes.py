@@ -3,10 +3,11 @@ from ..models import EmailThread, StagingFAQS, db, Summary, SOPGapCoverage, FAQS
 from ..utils import sortEmails, get_summary, get_pdf_content_by_doc_id, sop_email, BUSINESS_SIDE_NAME, BUSINESS_SIDE_EMAIL
 from threading import Thread
 from .. import create_app
+from typing import Optional, Union, List, Dict
 
 app = Blueprint('ai', __name__)
 
-def store_email_document_helper(thread_id: int, doc_id: int):
+def store_email_document_helper(thread_id: int, doc_id: int) -> Optional[Union[dict, None]]:
     try:
       app = create_app()
       with app.app_context():
@@ -70,7 +71,7 @@ def store_email_document_helper(thread_id: int, doc_id: int):
         return None
 
 @app.route('/store_thread_and_document', methods=['POST'])
-def store_email_document():
+def store_email_document() -> tuple[dict, int]:
     data = request.json
 
     if not data:
@@ -86,9 +87,8 @@ def store_email_document():
            args=(thread_id, document_id)).start()
     return jsonify({'success': 'Processing started in background', 'thread_id': thread_id}), 200
 
-
 @app.post('/summarize/<int:thread_id>')
-def summarize_thread_by_id(thread_id):
+def summarize_thread_by_id(thread_id: int) -> Union[Summary, dict]:
     summaryOption = request.args.get('option')
     thread = EmailThread.query.get(thread_id)
     if not thread:
@@ -115,9 +115,8 @@ def summarize_thread_by_id(thread_id):
     db.session.commit()
     return (response)
 
-
 @app.route('/get_category_gap/<int:doc_id>', methods=['GET'])
-def get_category_gaps(doc_id):
+def get_category_gaps(doc_id: int) -> tuple[dict, list[dict]]:
     enum_counts = (
         db.session.query(
             SOPGapCoverage.gap_type,
@@ -160,9 +159,8 @@ def get_category_gaps(doc_id):
     }
     return jsonify(response)
 
-
 @app.route('/staging_faq', methods=['GET'])
-def get_stating_faq():
+def get_stating_faq() -> List[Dict[str, Union[str, int]]]:
     stagingFaqs = StagingFAQS.query.all()
     stagingFaqList = []
     for stagingFaq in stagingFaqs:
@@ -175,7 +173,7 @@ def get_stating_faq():
     return jsonify(stagingFaqList)
 
 @app.get('/get_faqs_with_freq')
-def get_faqs_with_freq():
+def get_faqs_with_freq() -> List[Dict[str, Union[str, int]]]:
     faqs = FAQS.query.with_entities(
         FAQS.faq, FAQS.freq, FAQS.coverage_percentage, FAQS.coverage_description).order_by(FAQS.freq.desc()).all()
     print(faqs)
@@ -186,7 +184,7 @@ autoSendEnable = False
 thresholdVal = 101
 
 @app.post('/set_auto_send/<isAutoSend>/<int:threshold>')
-def setAutoSend(isAutoSend, threshold):
+def setAutoSend(isAutoSend: str, threshold: int) -> tuple[dict, int]:
     global autoSendEnable
     global thresholdVal
     
@@ -195,5 +193,5 @@ def setAutoSend(isAutoSend, threshold):
     return jsonify({}),200
 
 @app.get('/get_auto_send')
-def getAutoSend():
+def getAutoSend() -> jsonify:
     return jsonify({"isAutoSend": autoSendEnable, "thresholdVal": thresholdVal})
