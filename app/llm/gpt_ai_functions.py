@@ -46,6 +46,7 @@ def get_answer_from_email(email_subject: str, email_message: str, sender_name: s
     - Make sure it is a valid JSON object.
     - Use \n instead of whitespace or newline.
     - Never return anything other than a JSON object.
+    - Don't add HTML tags in response.
 
     Below are the emails asking about a specific process related to the company SOP.
     Email exchanges: 
