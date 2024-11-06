@@ -147,11 +147,11 @@ CREATE TABLE coverage_buckets (
 
 INSERT INTO public.threads
 (thread_id, thread_topic, created_at, updated_at)
-VALUES(1, 'Inquiry Regarding In-Store Merchandising', '2024-11-06 07:02:05.390', '2024-11-06 07:02:05.390');
+VALUES(1234, 'Inquiry Regarding In-Store Merchandising', '2024-11-06 07:02:05.390', '2024-11-06 07:02:05.390');
 
 INSERT INTO public.emails
 (email_record_id, sender_email, sender_name, receiver_email, receiver_name, thread_id, email_received_at, email_subject, email_content, is_resolved, coverage_percentage, coverage_description)
-VALUES(1, 'emily@abc.com', 'emily', 'support@business.com', 'Support Team', 1, '2024-11-06 07:02:05.390', 'Inquiry Regarding In-Store Merchandising', 'Dear Support Team,
+VALUES(123, 'emily@abc.com', 'emily', 'support@business.com', 'Support Team', 1234, '2024-11-06 07:02:05.390', 'Inquiry Regarding In-Store Merchandising', 'Dear Support Team,
 
 I am writing to inquire about the specific guidelines for in-store merchandising of our products.
 We would like to ensure that our products are displayed in a manner that maximizes visibility and aligns with your company''s branding standards.

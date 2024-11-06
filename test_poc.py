@@ -41,7 +41,7 @@ def test_create_email(client: FlaskClient):
     assert 'success' in resp.get_json()
 
 def test_add_email_to_thread(client: FlaskClient):
-    thread_id = 1  # This should be a valid thread_id present in your test database
+    thread_id = 1234  # This should be a valid thread_id present in your test database
     data = {
         "senderEmail": "test@example.com",
         "subject": "Test Subject",
@@ -57,14 +57,14 @@ def test_store_sop_doc_to_db(client: FlaskClient):
     assert resp.status_code == 200
 
 def test_update_email(client: FlaskClient):
-    email_id = 1  # This should be a valid email_id present in your test database
+    email_id = 2  # This should be a valid email_id present in your test database
     data = {"content": "Updated email content"}
     resp = client.put(f'/update/email/{email_id}', json=data)
     assert resp.status_code == 200
     assert 'success' in resp.get_json()
 
 def test_summarization(client: FlaskClient):
-    thread_id = 1
+    thread_id = 1234
     resp = client.post(f'/summarize/{thread_id}')
     assert resp.status_code == 200
 
@@ -75,13 +75,13 @@ def test_check_new_emails(client: FlaskClient):
 
 def test_store_email_document_(client: FlaskClient):
     with client.application.app_context():
-        store_email_document_helper(1, 1)
+        store_email_document_helper(2, 1)
         sleep(15) # Giving some time to generate response and insert it in the DB.
         email = Email.query.filter_by(thread_id = 1).order_by(Email.email_record_id.desc()).first()
         assert email is not None
 
 def test_store_thread_and_document(client: FlaskClient):
-    data = { 'thread_id' : 1, 'doc_id' : 1 }
+    data = { 'thread_id' : 1234, 'doc_id' : 1 }
     resp = client.post('/store_thread_and_document', json=data)
     assert resp.status_code == 200
 
