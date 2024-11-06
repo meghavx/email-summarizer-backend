@@ -1,12 +1,15 @@
 import ollama
 import json
 from typing import Optional, Tuple
-from app.llm.utils import get_string_between_braces
+from app.llm.utils import get_string_between_braces, getSummaryPrompt
 
-def llama_get_summary_response(discussion_thread: str) -> str:
-    prompt = f"""Please quickly summarize the following email thread in 2-3 points. 
-                Include the main points, important decisions, and highlight any significant dates. 
-                Here is the list of emails in the thread:\n\n"""
+def llama_get_summary_response(discussion_thread: str, summaryOption: Optional[str]) -> str:
+    summaryPrompt = getSummaryPrompt(summaryOption)
+    prompt = f"""
+            Make a short summary of the following email thread in a professional format, highlight if there is any important date.
+            {summaryPrompt}
+            Discussion thread:
+                """
     response = ollama.chat(model='llama3.2', messages=[{
     'role': 'user',
     'content': prompt + discussion_thread,

@@ -7,7 +7,7 @@ from typing import Optional, List, Tuple, Union
 
 BUSINESS_SIDE_NAME = "Support Team"
 BUSINESS_SIDE_EMAIL = "support@business.com"
-AI_MODEL = "gpt"  # Use either "gpt" or "llama".
+AI_MODEL = "llama"  # Use either "gpt" or "llama".
 
 def getSentimentHelper(sentiment_record: Optional[EmailThreadSentiment]) -> str:
     sentiment_ = sentiment_record.sentiments if sentiment_record else 'Positive'
@@ -47,7 +47,7 @@ def getCustomerNameAndEmail(emails: list[Email]) -> Optional[Tuple[str, str]]:
 
 def get_summary(discussion_thread: str, summaryOption: Optional[str]) -> Union[str, None]:
     if (AI_MODEL == "llama"):
-        return llama_get_summary_response(discussion_thread)
+        return llama_get_summary_response(discussion_thread, summaryOption)
     else:
         return get_summary_response(discussion_thread, summaryOption)
 
@@ -59,3 +59,5 @@ def sop_email(thread_topic: str, discussion_thread: list[dict], sender_name: str
 
 def sortEmails(emailList: List[Email], sortOrder: bool) -> List[Email]:
     return sorted(emailList, key=lambda email: email.email_received_at, reverse=not sortOrder)
+
+

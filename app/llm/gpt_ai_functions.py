@@ -6,7 +6,7 @@ from langchain_openai import OpenAIEmbeddings
 from dotenv import load_dotenv
 from openai import OpenAI
 import json
-from app.llm.utils import text_splitter, get_string_between_braces
+from app.llm.utils import text_splitter, get_string_between_braces, getSummaryPrompt
 from typing import Optional, Dict
 
 load_dotenv()
@@ -63,19 +63,6 @@ def get_answer_from_email(email_subject: str, email_message: str, sender_name: s
     coverage_description = decodedResult['description_for_coverage_percentage']
     faq = decodedResult['FAQ_based_on_email']
     return (decodedResult['sop_based_email_response'], percentage, coverage_description, faq)
-
-summaryDict = {
-    "convert_to_spanish" : """- Language of the summary shall be in spanish language."""
-    , "corporate_email" : """- The email discussion is in the corporate email. Add points related to corporate such as meeting agenda."""
-    , "customer_support": """- The email discussion is in between customer and customer support. """
-}
-
-def getSummaryPrompt(summaryOption: str | None) -> str | None:
-    if not summaryOption:
-        return None
-    if summaryOption in summaryDict:
-        return summaryDict[summaryOption]
-    return None
 
 def get_summary_response(discussion_thread: str, summaryOption: Optional[str]) -> str:
     summaryPrompt = getSummaryPrompt(summaryOption)

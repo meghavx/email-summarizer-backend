@@ -9,10 +9,56 @@ from typing import List, Tuple, Optional
 def sortEmails(emailList: List[Tuple[str, str, str, str, datetime, str, str, bool, int, str]]) -> List[Tuple[str, str, str, str, datetime, str, str, bool, int, str]]:
     return sorted(emailList, key=lambda email: email.email_received_at)
 
+def get_sentiment_score(text: str) -> int:
+    prompt = f"""
+        I will provide an email discussion thread between a customer and a customer support team for a supply chain company. 
+        Based on the conversation, categorize the sentiment and urgency of the email using the following categories:
+    1. **Critical (Negative Urgency)**: 
+        Emails that express high urgency, negative sentiment, or frustration. These emails require immediate action or resolution. 
+    2. **Needs Attention (Negative or Neutral)**: 
+        Emails with moderate urgency or concern, which may include complaints, requests for clarification, or unresolved issues. 
+        They may require follow-up but are not as pressing as critical emails.
+    3. **Neutral (No Immediate Action)**: 
+        Emails that are purely informational, with no immediate request or concern. These may provide updates, confirmations, or general communication.
+    4. **Positive (No Action Needed)**: Emails expressing satisfaction, appreciation, or positive feedback. 
+            No action or response is required unless it's to acknowledge the positive sentiment.
+
+    Based on this, categorize each email in the thread and briefly explain why it fits into the chosen category.
+     Give me a number between 1 to 10 (> 8 means critical, >6 means needs attention, > 3 means neutral and else positive) \n
+     remember to only return the number and nothing else:\n\n
+    Discussion: 
+    {text}
+    """
+    response = ollama.chat(
+        model='llama3.2',
+        messages=[{'role': 'user', 'content': prompt}]
+    )
+    return (response['message']['content'].strip())
+
+def analyze_sentiment(text: str) -> Optional[str]:
+    # Analyze sentiment
+    res = get_sentiment_score(text)
+    try:
+        sentiment_score = int(res.strip())
+    except ValueError:
+        print("Error parsing sentiment score.", res)
+        return 
+    
+    if sentiment_score >= 8:
+        sentiment = "Critical"
+    elif sentiment_score > 6:
+        sentiment = "Needs attention"  # Very negative sentiment
+    elif sentiment_score > 3:
+        sentiment = "Neutral"
+    else:
+        sentiment = "Positive"
+    return sentiment
+
 def update_sentiment(thread: Optional[EmailThread]) -> None:
+    if not thread:
+        return
     current_time = datetime.now()
 
-    # Check if a sentiment record exists
     sentiment_record = session.query(EmailThreadSentiment).filter_by(thread_id=thread.thread_id).first()
 
     if sentiment_record:
@@ -21,61 +67,23 @@ def update_sentiment(thread: Optional[EmailThread]) -> None:
             return  # Sentiment is recent, no need to update
 
     # Generate sentiment prompt based on emails in the thread
-    emails = sortEmails(thread.emails)
-    prompt = f"""
-         I will provide you with an email discussion thread between a customer and a customer support team for a supply chain company. 
-        Based on the conversation, categorize the sentiment and urgency of the email using the following categories:
-        1. **Critical (Negative Sentiment + High Urgency)**: 
-           - Emails expressing frustration, anger, or dissatisfaction. These emails often include urgent requests or complaints and require 
-            immediate action to avoid further escalation.
-           - Examples: Use of strong negative language, repeated requests for assistance, escalations.
-        2. **Needs Attention (Neutral or Negative Sentiment + Medium Urgency)**:
-           - Emails that express concern, ask for clarification, or raise issues that need follow-up but are not as pressing as critical emails.
-           - Examples: Requests for updates, unresolved issues, polite complaints.
-        3. **Neutral (Informational + Low Urgency)**:
-           - Emails that do not require immediate action. These emails are generally informational, providing updates or confirmations without 
-                expressing significant emotions or concerns.
-           - Examples: Status updates, order confirmations, or general communication without pressing requests.
-        4. **Positive (Satisfaction + No Action Needed)**:
-           - Emails that express satisfaction, gratitude, or appreciation. These emails do not require any follow-up or immediate 
-            response unless it's to acknowledge the positive sentiment.
-           - Examples: Thank-you notes, positive feedback, compliments on service.
-        
-        Based on these categories, you should:
-        - Analyze the **tone**, **word choice**, and **urgency** of the email content.
-        - Give me a sentiment score between 1 and 10 based on the urgency and tone of the conversation 
-            (where 10 is highly critical, 7–8 needs attention, 4–6 neutral, and 1–3 positive).
-        - Only return the sentiment score as a number and nothing else.
-        """
+    emails = [{
+        'senderEmail': email.sender_email,
+        'date': email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else None,
+        'content': email.email_content,
+    } for email in thread.emails]
+
+    prompt = ""
     for email in emails:
-        sender = email.sender_email
-        date = email.email_received_at.strftime('%B %d, %Y %I:%M %p') if email.email_received_at else "Unknown"
-        content = email.email_content
-        prompt += f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
+        sender = email['senderEmail']
+        date = email['date']
+        content = email['content']
+        email_entry = f"From: {sender}\nDate: {date}\nContent: {content}\n\n"
+        prompt += email_entry
 
-    # Fetch sentiment from Ollama
-    response = ollama.chat(
-        model='llama3.2',
-        messages=[{'role': 'user', 'content': prompt}]
-    )
-    print(f"sentiment for {thread.thread_id}",response['message']['content'].strip())
-    try:
-        sentiment_score = int(response['message']['content'].strip())
-    except ValueError:
-        print("Error parsing sentiment score.")
-        return 
-
-    # Map sentiment score to categories
-    if sentiment_score > 8:
-        sentiment_category = 'Positive'
-    elif sentiment_score > 6:
-        sentiment_category = 'Needs attention'
-    elif sentiment_score > 3:
-        sentiment_category = 'Neutral'
-    else:
-        sentiment_category = 'Critical'
-
-    # Save or update sentiment in the database
+    sentiment_category = analyze_sentiment(prompt)
+    if (not sentiment_category):
+        return
     if sentiment_record:
         sentiment_record.sentiments = sentiment_category
         sentiment_record.timestamp = current_time
@@ -100,7 +108,7 @@ def job() -> None:
     run_sentiment_analysis()
 
 if __name__ == '__main__':
-    schedule.every(5).hours.do(job)
+    schedule.every(5).minutes.do(job)
     job()
     while True:
         schedule.run_pending()

@@ -34,3 +34,16 @@ def findLastOccurrence(text: str, ch: str) -> int | None:
     if (lastIdx == -1):
         return None
     return lastIdx
+
+summaryDict = {
+    "convert_to_spanish" : """- Language of the summary shall be in spanish language."""
+    , "corporate_email" : """- The email discussion is in the corporate email. Add points related to corporate such as meeting agenda."""
+    , "customer_support": """- The email discussion is in between customer and customer support. """
+}
+
+def getSummaryPrompt(summaryOption: str | None) -> str | None:
+    if not summaryOption:
+        return None
+    if summaryOption in summaryDict:
+        return summaryDict[summaryOption]
+    return None

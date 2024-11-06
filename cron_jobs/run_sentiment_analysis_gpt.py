@@ -65,7 +65,9 @@ def update_sentiment(thread: Optional[EmailThread]) -> None:
     if not thread:
         return
     current_time = datetime.now()
+
     sentiment_record = session.query(EmailThreadSentiment).filter_by(thread_id=thread.thread_id).first()
+
     if sentiment_record:
         time_difference = current_time - sentiment_record.timestamp
         if time_difference < timedelta(hours=5):
@@ -111,7 +113,7 @@ def job() -> None:
     run_sentiment_analysis()
 
 if __name__ == '__main__':
-    schedule.every(5).hours.do(job)
+    schedule.every(5).minutes.do(job)
     job()
     while True:
         schedule.run_pending()
