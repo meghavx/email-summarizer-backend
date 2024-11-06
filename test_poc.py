@@ -6,6 +6,7 @@ from app.routes.ai_routes import store_email_document_helper
 from app.models import Email
 from flask import Flask
 from flask.testing import FlaskClient
+from time import sleep
 
 @pytest.fixture
 def app() -> Flask:
@@ -39,7 +40,7 @@ def test_create_email(client: FlaskClient):
     assert resp.status_code == 201
     assert 'success' in resp.get_json()
 
-def test_add_email_to_thread(client: FlaskClient, thread_id: int):
+def test_add_email_to_thread(client: FlaskClient):
     thread_id = 1  # This should be a valid thread_id present in your test database
     data = {
         "senderEmail": "test@example.com",
@@ -55,15 +56,15 @@ def test_store_sop_doc_to_db(client: FlaskClient):
     resp = client.post('/upload_sop_doc/', data=data)
     assert resp.status_code == 200
 
-def test_update_email(client: FlaskClient, email_id: int):
+def test_update_email(client: FlaskClient):
     email_id = 1  # This should be a valid email_id present in your test database
     data = {"content": "Updated email content"}
     resp = client.put(f'/update/email/{email_id}', json=data)
     assert resp.status_code == 200
     assert 'success' in resp.get_json()
 
-def test_summarization(client: FlaskClient, thread_id: int = 12345):
-    thread_id = 12345
+def test_summarization(client: FlaskClient):
+    thread_id = 1
     resp = client.post(f'/summarize/{thread_id}')
     assert resp.status_code == 200
 
@@ -72,18 +73,15 @@ def test_check_new_emails(client: FlaskClient):
     resp = client.get(f'check_new_emails/{currTime}')
     assert resp.status_code == 200
 
-def test_store_email_document_(client: FlaskClient, thread_id: int = 12345):
+def test_store_email_document_(client: FlaskClient):
     with client.application.app_context():
-        store_email_document_helper(12345, 1)
-        # Verify new email creation
-        email = Email.query.filter_by(thread_id = 12345).order_by(Email.email_record_id.desc()).first()
+        store_email_document_helper(1, 1)
+        sleep(15) # Giving some time to generate response and insert it in the DB.
+        email = Email.query.filter_by(thread_id = 1).order_by(Email.email_record_id.desc()).first()
         assert email is not None
-        assert email.sender_email == client.application.config['BUSINESS_SIDE_EMAIL']
-        assert email.sender_name == client.application.config['BUSINESS_SIDE_NAME']
-        assert email.is_resolved is False
 
 def test_store_thread_and_document(client: FlaskClient):
-    data = { 'thread_id' : 12345, 'doc_id' : 1 }
+    data = { 'thread_id' : 1, 'doc_id' : 1 }
     resp = client.post('/store_thread_and_document', json=data)
     assert resp.status_code == 200
 

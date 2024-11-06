@@ -145,4 +145,22 @@ CREATE TABLE coverage_buckets (
 	updated_at TIMESTAMP DEFAULT now()
 );
 
+INSERT INTO public.threads
+(thread_id, thread_topic, created_at, updated_at)
+VALUES(1, 'Inquiry Regarding In-Store Merchandising', '2024-11-06 07:02:05.390', '2024-11-06 07:02:05.390');
+
+INSERT INTO public.emails
+(email_record_id, sender_email, sender_name, receiver_email, receiver_name, thread_id, email_received_at, email_subject, email_content, is_resolved, coverage_percentage, coverage_description)
+VALUES(1, 'emily@abc.com', 'emily', 'support@business.com', 'Support Team', 1, '2024-11-06 07:02:05.390', 'Inquiry Regarding In-Store Merchandising', 'Dear Support Team,
+
+I am writing to inquire about the specific guidelines for in-store merchandising of our products.
+We would like to ensure that our products are displayed in a manner that maximizes visibility and aligns with your company''s branding standards.
+
+Could you please provide us with a detailed outline of the guidelines, including information on display standards, end cap placement, and signage requirements?
+Thank you for your assistance.
+
+Best regards, 
+Emily Green', true, NULL, NULL);
+
+
 COMMIT;
